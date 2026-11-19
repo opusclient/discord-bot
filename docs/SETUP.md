@@ -89,6 +89,8 @@ This excerpt illustrates the shape; merge it into `config.json`, not a replaceme
 | `botControlRoleIds` | Operational bot-command authorities |
 | `teamRoleIds` | Approved team roles for applicable features |
 | `developmentAccessRoleId` | Restricted read/chat access for non-developer collaborators |
+| `staffManagementRoleId` | Staff-only bot delegation for selected Adminstrators or Development members |
+| `developmentManagementRoleId` | Dev-only bot delegation for selected Managers; Principal Engineer is implicitly authorized |
 | `verifiedRoleId`, `linkedRoleId`, `unlinkedRoleId` | Account and verification state |
 | `muteRoleId`, `modRoleId` | Mute and moderator integration |
 | `tickets` | Panel, staff access, type categories, transcripts and archive |

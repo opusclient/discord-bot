@@ -48,6 +48,8 @@ const roleList = [
   role(support, 'Support', 11),
   role(tester, 'Beta Tester', 7),
   role(artist, 'Artist', 8),
+  role(config.staffManagementRoleId, 'Staff Management', 9),
+  role(config.developmentManagementRoleId, 'Development Management', 10),
   role(verified, 'Verified', 6),
   role(linked, 'Linked', 2)
 ];
@@ -111,7 +113,8 @@ function makeInteraction(mode, users, toRole, fromRole, members) {
     guild,
     id: '123456789012345695',
     user: { id: ids.manager, tag: 'manager' },
-    member: { permissions: { has: () => true }, roles: { highest: actorRole } },
+    member: { permissions: { has: () => true }, roles: { highest: actorRole,
+      cache: new Map([[manager, getRole(manager)], [config.developmentManagementRoleId, getRole(config.developmentManagementRoleId)]]) } },
     options: {
       getString: key => key === 'users' ? users : key === 'reason' ? 'Team update' : null,
       getRole: key => key === 'role' || key === 'to_role' ? toRole : key === 'from_role' ? fromRole : null
@@ -350,7 +353,7 @@ test('Manager cannot change their own rank or self-assign Discord Developer', as
       assert.deepEqual(result.success, []);
       assert.match(result.records[0].error, /independent functional roles/);
     } else {
-      assert.match(JSON.stringify(changes.at(-1)[1]), /role hierarchy/);
+      assert.match(JSON.stringify(changes.at(-1)[1]), /role hierarchy|Development branch management/);
     }
   }
 });
@@ -383,4 +386,127 @@ test('Founder owner may change independent self-roles without breaking branch ex
 test.after(() => {
   db.close();
   rmSync(dir, { recursive: true, force: true });
+});
+
+test('Adminstrator delegated Staff Management can promote lower Staff without native Manage Roles', async () => {
+  const user = makeMember(ids.first, [support, verified]);
+  const { interaction } = makeInteraction('promote', ids.first, getRole(moderator), getRole(support),
+    new Map([[ids.first, user]]));
+  interaction.member.roles.cache = new Map([
+    [admin, getRole(admin)],
+    [config.staffManagementRoleId, getRole(config.staffManagementRoleId)]
+  ]);
+  interaction.member.roles.highest = getRole(admin);
+  interaction.member.permissions.has = () => false;
+  const result = await executeRoleOperation(interaction, 'promote');
+  assert.deepEqual(result.success, [ids.first]);
+  same(user.member.roles.cache.keys(), [moderator, verified]);
+});
+
+test('Adminstrator without Staff Management cannot promote and delegated Staff manager cannot manage Dev', async () => {
+  const user = makeMember(ids.first, [support, developer, verified]);
+  const { interaction, changes } = makeInteraction('promote', ids.first, getRole(moderator), getRole(support),
+    new Map([[ids.first, user]]));
+  interaction.member.roles.cache = new Map([[admin, getRole(admin)]]);
+  interaction.member.roles.highest = getRole(admin);
+  interaction.member.permissions.has = () => false;
+  await executeRoleOperation(interaction, 'promote');
+  assert.equal(user.calls.length, 0);
+  assert.match(JSON.stringify(changes.at(-1)[1]), /Staff branch management/);
+
+  const { interaction: other, changes: otherChanges } =
+    makeInteraction('add', ids.first, getRole(frontend), null,
+      new Map([[ids.first, user]]));
+  other.member.roles.cache = new Map([
+    [admin, getRole(admin)],
+    [config.staffManagementRoleId, getRole(config.staffManagementRoleId)]
+  ]);
+  other.member.roles.highest = getRole(admin);
+  other.member.permissions.has = () => false;
+  await executeRoleOperation(other, 'add');
+  assert.equal(user.calls.length, 0);
+  assert.match(JSON.stringify(otherChanges.at(-1)[1]), /Development branch management/);
+});
+
+test('Principal Engineer can manage Developer specializations without Development Management role', async () => {
+  const user = makeMember(ids.first, [developer, verified]);
+  const { interaction } = makeInteraction('add', ids.first, getRole(backend), null,
+    new Map([[ids.first, user]]));
+  interaction.member.roles.cache = new Map([[principal, getRole(principal)]]);
+  interaction.member.roles.highest = getRole(principal);
+  interaction.member.permissions.has = () => false;
+  const result = await executeRoleOperation(interaction, 'add');
+  assert.deepEqual(result.success, [ids.first]);
+  same(user.member.roles.cache.keys(), [developer, backend, verified]);
+});
+
+test('Manager requires Development Management delegation for Development operations', async () => {
+  const user = makeMember(ids.first, [developer, verified]);
+  const first = makeInteraction('promote', ids.first, getRole(principal), getRole(developer),
+    new Map([[ids.first, user]]));
+  first.interaction.member.roles.cache = new Map([[manager, getRole(manager)]]);
+  first.interaction.member.roles.highest = getRole(manager);
+  await executeRoleOperation(first.interaction, 'promote');
+  assert.equal(user.calls.length, 0);
+  assert.match(JSON.stringify(first.changes.at(-1)[1]), /Development branch management/);
+
+  const second = makeInteraction('promote', ids.first, getRole(principal), getRole(developer),
+    new Map([[ids.first, user]]));
+  second.interaction.member.roles.cache = new Map([
+    [manager, getRole(manager)],
+    [config.developmentManagementRoleId, getRole(config.developmentManagementRoleId)]
+  ]);
+  second.interaction.member.roles.highest = getRole(manager);
+  const result = await executeRoleOperation(second.interaction, 'promote');
+  assert.deepEqual(result.success, [ids.first]);
+  same(user.member.roles.cache.keys(), [principal, verified]);
+});
+
+test('Only Founder or Manager can assign delegated management roles and neither can self-assign', async () => {
+  const staffManagement = getRole(config.staffManagementRoleId);
+  const devManagement = getRole(config.developmentManagementRoleId);
+  const adminUser = makeMember(ids.first, [admin, verified]);
+  const unauthorized = makeInteraction('add', ids.first, staffManagement, null,
+    new Map([[ids.first, adminUser]]));
+  unauthorized.interaction.member.roles.cache = new Map([[principal, getRole(principal)]]);
+  unauthorized.interaction.member.roles.highest = getRole(principal);
+  unauthorized.interaction.member.permissions.has = () => false;
+  await executeRoleOperation(unauthorized.interaction, 'add');
+  assert.equal(adminUser.calls.length, 0);
+  assert.match(JSON.stringify(unauthorized.changes.at(-1)[1]), /Only Founder or Manager/);
+
+  const managerUser = makeMember(ids.first, [manager, verified]);
+  const authorized = makeInteraction('add', ids.first, devManagement, null,
+    new Map([[ids.first, managerUser]]));
+  authorized.interaction.user.id = ids.owner;
+  authorized.interaction.member.roles.cache = new Map([[founder, getRole(founder)]]);
+  authorized.interaction.member.roles.highest = getRole(founder);
+  authorized.interaction.member.permissions.has = () => false;
+  const result = await executeRoleOperation(authorized.interaction, 'add');
+  assert.deepEqual(result.success, [ids.first]);
+  same(managerUser.member.roles.cache.keys(), [manager, devManagement.id, verified]);
+
+  const own = makeInteraction('add', ids.manager, devManagement, null,
+    new Map([[ids.manager, makeMember(ids.manager, [manager, verified])]]));
+  own.interaction.member.roles.cache = new Map([[manager, getRole(manager)]]);
+  own.interaction.member.roles.highest = getRole(manager);
+  await executeRoleOperation(own.interaction, 'add');
+  assert.match(JSON.stringify(own.changes.at(-1)[1]), /management delegation/);
+});
+
+test('Staff delegation is revoked in the same atomic update when an Adminstrator is demoted', async () => {
+  const user = makeMember(ids.first, [admin, config.staffManagementRoleId, verified]);
+  const { interaction } = makeInteraction('demote', ids.first, getRole(support), getRole(admin),
+    new Map([[ids.first, user]]));
+  interaction.member.roles.cache = new Map([
+    [developer, getRole(developer)],
+    [config.staffManagementRoleId, getRole(config.staffManagementRoleId)]
+  ]);
+  interaction.member.roles.highest = getRole(developer);
+  interaction.member.permissions.has = () => false;
+  const result = await executeRoleOperation(interaction, 'demote');
+  assert.deepEqual(result.success, [ids.first]);
+  assert.equal(user.calls.length, 1);
+  same(user.member.roles.cache.keys(), [support, verified]);
+  same(result.records[0].removedRoles.map(role => role.id), [admin, config.staffManagementRoleId]);
 });

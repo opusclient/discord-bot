@@ -41,6 +41,7 @@ The event implementations are intentionally separate so a failed moderation noti
 | `src/config.js` | Local configuration loading, default values and controlled updates |
 | `src/db.js` | SQLite schema and statements; cases, tickets, joins, states and records |
 | `src/services/roleBranchPolicy.js` | Pure Staff/Development hierarchy and consistency rules |
+| `src/services/teamManagement.js` | Independent Staff/Development delegation and implicit Principal Engineer permissions |
 | `src/services/roleBranchService.js` | Serialized per-member role updates and reconciliation |
 | `src/services/roleOperations.js` | Bulk role commands, authorization, notifications and history |
 | `src/services/teamRoleHistory.js` | Structured promote/demote records |

@@ -31,6 +31,8 @@ const DEFAULT_FILE_CONFIG = {
   overlay: { enabled: true, eventChannelId: '' },
   protectedRoleIds: [],
   developmentAccessRoleId: '',
+  staffManagementRoleId: '',
+  developmentManagementRoleId: '',
   muteInternalCategoryIds: [],
   mutedBotCmdsChannelId: '',
   botStatusChannelId: '',

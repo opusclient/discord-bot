@@ -52,7 +52,7 @@ Cases, audit messages and expirations have their own destinations. Discord AutoM
 | `/demote` | Demote within a branch or clear its roles |
 | `/addselfrole`, `/removeselfrole` | Configure the public opt-in role panel |
 
-The Staff and Development branch rules, Manager+ self-role exception, Discord Developer special case and Development Access restrictions are in [PERMISSIONS.md](PERMISSIONS.md).
+The Staff and Development branch rules, delegated **Staff Management** / **Development Management** roles, automatic Principal Engineer permissions, Manager+ self-role exception, Discord Developer special case and Development Access restrictions are in [PERMISSIONS.md](PERMISSIONS.md).
 
 ## Operations
 

@@ -17,7 +17,7 @@ Principal Engineer > Developer
 
 `Adminstrator` is the spelling of the configured role in the original guild; do not silently rename its configuration key or ID.
 
-**Important:** Discord's visual role positions and the two logical branches are different concepts. A Developer with a Staff role has **two responsibilities**: Development access and whatever moderation authority their Staff role actually grants.
+**Important:** Discord's visual role positions and the two logical branches are different concepts. A Developer with a Staff role has **two responsibilities**: Development access and whatever moderation authority their Staff role actually grants. Neither responsibility alone automatically grants Staff Management or Development Management commands.
 
 ### Staff branch
 
@@ -53,6 +53,25 @@ Discord Developer is **not equivalent to a regular Developer specialty** in nati
 5. Trying to add a Staff rank while Discord Developer is held is rejected by role policy.
 6. This grants real Discord authority and should only be assigned to highly trusted personnel. Native Discord Administrator is distinct from Opus System command permissions.
 
+## Delegated management roles
+
+The two management roles delegate **permission to perform team role operations through Opus System**. They are **functional roles, not positions in the Staff/Development rank ladders**; each has zero native Discord permission flags.
+
+| Functional role | Who may hold it | Bot permissions | Not granted |
+| --- | --- | --- | --- |
+| **Staff Management** | Trusted Adminstrator or member with an existing Principal Engineer/Developer rank | `/promote`, `/demote`, and `/role add/remove` when the roles being changed belong to **Staff** | Development branch management, server Administrator, native Manage Roles |
+| **Development Management** | A selected **Manager** | Equivalent role operations within the **Development** branch, including Developer/specialist roles and ranks below the actor's Discord role | Staff branch delegation, server Administrator, native Manage Roles |
+
+**Implicit authorities:**
+
+- **Founder** (the guild owner) manages **both branches** without either management role.
+- **Manager** manages **Staff** without Staff Management. Manager does **not** automatically manage Development; a Founder must appoint the selected Manager with Development Management because peers at the Manager hierarchy cannot modify one another.
+- **Principal Engineer** automatically manages **Development** without holding Development Management. This does not automatically grant Staff Management.
+- **Discord Developer** retains its configured exceptional Discord Administrator authority and is accepted for Development operations; it remains incompatible with Staff rank roles.
+- A normal Adminstrator or Developer does **not** receive management commands merely from their rank.
+
+**Delegation restrictions:** Only Founder/Manager can grant or revoke either management role using the bot. The selected recipient must already hold the qualifying rank. Neither role can be self-assigned by `/role add`, added to self-role buttons, or obtained via `/promote`. Removing the qualifying rank also removes the delegation at reconciliation. All actions still enforce bot and actor Discord hierarchy and are audited.
+
 ### Manager and native permissions
 
 The deployed Opus Server Manager model provides:
@@ -62,7 +81,8 @@ The deployed Opus Server Manager model provides:
 | View and send in ordinary channels | Yes, through configured role permissions and channel overwrites |
 | Manage channels, server configuration, webhooks and events | Yes, through specific native Discord permissions |
 | View Audit Log; mention otherwise unmentionable roles | Yes, when configured |
-| Use bot moderation and staff/role operations | Yes, subject to bot authorization and hierarchy |
+| Use bot moderation and Staff role operations | Yes, subject to bot authorization and hierarchy |
+| Manage Development branch | **Only when assigned Development Management** |
 | Native Discord Administrator | **No** by default |
 | Native Ban / Kick / timeout / Manage Roles | Not intended to be granted directly; actions go through Opus System |
 | Self-manage functional roles | Only under the limited exception described below |
@@ -89,7 +109,7 @@ Example: A Moderator can be granted Development Access to collaborate with devel
 
 | Command | Purpose | Rules |
 | --- | --- | --- |
-| `/role add users role` | Assign a role to up to 50 members | Validates hierarchy, role scope, branch policy and protected roles |
+| `/role add users role` | Assign a role to up to 50 members | Delegated management role required for team-branch changes; only Founder/Manager can assign management delegation roles |
 | `/role remove users role` | Remove a role | May cascade dependent Developer specialties |
 | `/promote users to_role [from_role]` | Move up a configured branch | Cannot silently demote or cross Staff/Development branches |
 | `/demote users from_role [to_role]` | Move down or clear a branch | `from_role` is required and must match the active source rank |
@@ -125,6 +145,11 @@ See [TICKETS.md](TICKETS.md) for the full model.
 | Principal Engineer + Adminstrator | Demote Adminstrator to Support | Principal Engineer + Support |
 | Developer + Discord Developer | Add Moderator | Rejected |
 | Manager | Add Development Access | Rejected: Development access is already available |
+| Adminstrator + Staff Management | Promote Support to Moderator | Allowed, provided target is below Adminstrator in Discord hierarchy |
+| Developer + Staff Management | Change a Development rank | Rejected without separate Development Management authority |
+| Manager without Development Management | Promote Developer to Principal Engineer | Rejected until delegation is assigned |
+| Manager with Development Management | Promote Developer to Principal Engineer | Allowed if role hierarchy permits |
+| Principal Engineer without Development Management | Assign a Developer specialty | Allowed automatically |
 | Moderator | Add Development Access via authorized Manager | Moderator + Development Access |
 | Manager | Self-add Artist | Allowed subject to normal role checks |
 | Manager | Self-add Discord Developer | Rejected |

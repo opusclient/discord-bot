@@ -46,6 +46,14 @@ export function normalizeMemberRoles(current, { owner = false, scope = null } = 
       [policy.founder, policy.manager, ...policy.development, ...policy.specialties].some(id => next.has(id))) {
     next.delete(config.developmentAccessRoleId);
   }
+  if (config.staffManagementRoleId && next.has(config.staffManagementRoleId) &&
+      ![policy.staff[2], ...policy.development].some(id => next.has(id))) {
+    next.delete(config.staffManagementRoleId);
+  }
+  if (config.developmentManagementRoleId && next.has(config.developmentManagementRoleId) &&
+      !next.has(policy.manager)) {
+    next.delete(config.developmentManagementRoleId);
+  }
   const staffScope = scope === null || scope === 'staff';
   const developmentScope = scope === null || scope === 'development';
   if (staffScope) {
@@ -105,6 +113,11 @@ export function planRoleChange(current, { mode, fromId = null, toId = null, owne
     throw new Error('This role is already assigned.');
   }
 
+  if (['promote', 'demote'].includes(mode) &&
+      [fromId, toId].some(id => id &&
+        [config.staffManagementRoleId, config.developmentManagementRoleId].includes(id))) {
+    throw new Error('Management delegation must be changed with /role add or /role remove.');
+  }
   const fromFamily = fromId ? roleFamily(fromId, policy) : null;
   const toFamily = toId ? roleFamily(toId, policy) : null;
   const discordDeveloper = policy.specialties[2];
@@ -115,6 +128,14 @@ export function planRoleChange(current, { mode, fromId = null, toId = null, owne
       .some(id => before.has(id));
   if (redundantDevelopmentAccess) {
     throw new Error('This member already has Development access through their team role. Development Access is redundant.');
+  }
+  if (mode === 'add' && toId === config.staffManagementRoleId &&
+      ![policy.staff[2], ...policy.development].some(id => before.has(id))) {
+    throw new Error('Staff Management requires Adminstrator or an existing Development rank.');
+  }
+  if (mode === 'add' && toId === config.developmentManagementRoleId &&
+      !before.has(policy.manager)) {
+    throw new Error('Development Management requires the Manager role; Principal Engineer already has its authority.');
   }
   if (toFamily === 'staff' && before.has(discordDeveloper)) {
     throw new Error('Discord Developer has full server authority and cannot hold a Staff branch role.');

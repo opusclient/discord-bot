@@ -60,7 +60,9 @@ In production, run the bot under a supervisor such as systemd, a service manager
 | --- | --- |
 | Slash commands missing | Wrong application/guild ID, missing OAuth scope, stale command registry |
 | Bot cannot change a role | Bot role too low, denied Manage Roles, protected target or policy rejection |
-| Manager cannot self-assign Development Access | Correct behavior: Manager already has Development rights |
+| Manager cannot self-assign Development Access | Correct behavior: Manager already has Development channel access |
+| Manager cannot promote Development members | Manager needs Development Management; Principal Engineer receives Development-management authority automatically |
+| Staff Management role disappears after a demotion | The qualifying Adminstrator/Developer rank was removed and branch reconciliation revoked delegated authority |
 | Discord Developer gains Staff roles briefly then loses them | Reconciler enforces incompatibility |
 | Ticket user remains after removing a role | Another role grants access; use direct user removal if appropriate |
 | Invite total is lower than link usage count | Only unambiguous tracked member joins count; old uses and unknown joins are excluded |

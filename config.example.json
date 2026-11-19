@@ -125,5 +125,7 @@
     "automodChannelId": "",
     "blacklistChannelId": ""
   },
-  "developmentAccessRoleId": ""
+  "developmentAccessRoleId": "",
+  "staffManagementRoleId": "",
+  "developmentManagementRoleId": ""
 }

@@ -8,6 +8,10 @@ import { sendModLog } from './log.js';
 import { applyRoleBranchOperation } from './roleBranchService.js';
 import { getRoleBranches, roleFamily } from './roleBranchPolicy.js';
 import { developmentAccessPermissionError } from './developmentAccess.js';
+import {
+  isTeamManagementRole, isManagerPlus, teamManagementPermissionError,
+  roleOperationScope
+} from './teamManagement.js';
 import { recordTeamRoleChange } from './teamRoleHistory.js';
 import { ensureBotPermissions, ensureModerator, roleAssignabilityError } from '../utils/permissions.js';
 
@@ -35,8 +39,9 @@ export function targetRoleError(interaction, member, { mode = null, toRole = nul
     const managerPlus = interaction.user.id === interaction.guild.ownerId ||
       interaction.member.roles.cache.has(config.roleBranches.manager);
     if (!managerPlus) return 'Only Manager or Founder can change their own roles.';
-    if (!['add', 'remove'].includes(mode) || !toRole || roleFamily(toRole.id) !== null) {
-      return 'Manager+ can change only independent functional roles on themselves, not Staff or Development ranks.';
+    if (!['add', 'remove'].includes(mode) || !toRole || roleFamily(toRole.id) !== null ||
+        isTeamManagementRole(toRole)) {
+      return 'Manager+ can change only ordinary independent functional roles on themselves, not team ranks or management delegation.';
     }
   }
   if (member.id === interaction.guild.ownerId && !self) return 'The server owner cannot be modified.';
@@ -48,8 +53,11 @@ export function targetRoleError(interaction, member, { mode = null, toRole = nul
   return null;
 }
 
-export function manageableRoleError(interaction, role) {
-  const restricted = developmentAccessPermissionError(interaction, role);
+export function manageableRoleError(interaction, role, { indirect = false } = {}) {
+  const managementError = !indirect && isTeamManagementRole(role)
+    ? teamManagementPermissionError(interaction, null, role) : null;
+  if (managementError) return managementError;
+  const restricted = !indirect && developmentAccessPermissionError(interaction, role);
   if (restricted) return restricted;
   const error = roleAssignabilityError(interaction.guild, role);
   if (error) return error;
@@ -65,7 +73,6 @@ export function manageableRoleError(interaction, role) {
 
 export async function executeRoleOperation(interaction, mode) {
   await interaction.deferReply({ flags: visibilityFlags(interaction) });
-  if (!(await ensureModerator(interaction, PermissionsBitField.Flags.ManageRoles, 'Manage Roles', { modRoleAllowed: false }))) return;
   if (!(await ensureBotPermissions(interaction, PermissionsBitField.Flags.ManageRoles, 'Manage Roles'))) return;
   const parsed = parseUserList(interaction.options.getString('users', true));
   if (parsed.error) return interaction.editReply({ embeds: [errorEmbed(parsed.error)] });
@@ -80,6 +87,14 @@ export async function executeRoleOperation(interaction, mode) {
   if (mode === 'demote' && !explicitFrom) {
     return interaction.editReply({ embeds: [errorEmbed('Specify from_role to demote a member.')] });
   }
+  const managementError = teamManagementPermissionError(interaction, explicitFrom, targetRole);
+  if (managementError) {
+    return interaction.editReply({ embeds: [errorEmbed(managementError)] });
+  }
+  const scope = roleOperationScope(explicitFrom, targetRole);
+  if (!scope && !isTeamManagementRole(targetRole) && !isTeamManagementRole(explicitFrom) &&
+      !(await ensureModerator(interaction, PermissionsBitField.Flags.ManageRoles, 'Manage Roles',
+        { modRoleAllowed: false }))) return;
   for (const role of [targetRole, explicitFrom].filter(Boolean)) {
     const problem = manageableRoleError(interaction, role);
     if (problem) return interaction.editReply({ embeds: [errorEmbed(problem)] });
@@ -119,7 +134,9 @@ export async function executeRoleOperation(interaction, mode) {
         toRole: targetRole,
         reason: audit,
         guard: (current, changedRole) => changedRole
-          ? manageableRoleError(interaction, changedRole)
+          ? manageableRoleError(interaction, changedRole, {
+            indirect: changedRole.id !== targetRole?.id && changedRole.id !== explicitFrom?.id
+          })
           : targetRoleError(interaction, current, { mode, toRole: targetRole })
       });
       const branches = getRoleBranches();

@@ -73,7 +73,8 @@ The diagram represents **responsibility**, not every native Discord role positio
 - Normal Staff members hold only their highest applicable Staff rank.
 - Ordinary Development members may also hold a Staff role; Staff promotion and demotion still follow the Staff ladder.
 - **Discord Developer** is the special case: it has a configured native Discord Administrator permission and **must not hold a Staff rank**.
-- **Manager** has broad, explicitly configured server/channel permissions but **does not automatically have the Administrator flag**. Moderation actions are performed through the bot's authorization checks.
+- **Manager** has broad, explicitly configured server/channel permissions but **does not automatically have the Administrator flag**. Manager manages Staff automatically; Development management requires the separately delegated **Development Management** role.
+- **Staff Management** can be delegated to a trusted Adminstrator or Development member and operates only on the Staff branch. **Development Management** is reserved for one or more selected Managers; **Principal Engineer** has Development-management authority automatically, without the role.
 - **Development Access** is a restricted **functional access role**, not a Staff or Development rank. Only Founder/Manager can assign or revoke it through the bot; the bot rejects redundant assignment to someone already entitled to Development access.
 - The actual server owner is treated specially by role reconciliation to avoid unintended modifications to the owner account.
 - The bot's own managed roles must remain above the roles it needs to modify.

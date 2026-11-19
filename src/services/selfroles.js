@@ -26,7 +26,7 @@ const MAX_SELF_ROLES = 25;
 
 const BUTTON_STYLES = new Set(['Primary', 'Secondary', 'Success', 'Danger']);
 
-const isProtectedRole = (role) => isDevelopmentAccessRole(role) || [config.verifiedRoleId, config.unlinkedRoleId, config.linkedRoleId, config.muteRoleId, config.modRoleId, config.botPermsRoleId, config.botRoleId, config.botsRoleId, ...(config.protectedRoleIds ?? [])].filter(Boolean).includes(role.id) || ['Verified', 'Unlinked', 'Linked', 'Muted', 'Owner', 'Developer', 'Artist', 'Tester', 'Beta Tester', 'Admin', 'Manager', 'Staff', 'Moderator', 'Support'].includes(role.name);
+const isProtectedRole = (role) => isDevelopmentAccessRole(role) || [config.verifiedRoleId, config.unlinkedRoleId, config.linkedRoleId, config.muteRoleId, config.modRoleId, config.botPermsRoleId, config.botRoleId, config.botsRoleId, config.staffManagementRoleId, config.developmentManagementRoleId, ...(config.protectedRoleIds ?? [])].filter(Boolean).includes(role.id) || ['Verified', 'Unlinked', 'Linked', 'Muted', 'Owner', 'Developer', 'Artist', 'Tester', 'Beta Tester', 'Admin', 'Manager', 'Staff', 'Moderator', 'Support'].includes(role.name);
 
 // Self roles are enabled once a channel is configured and at least one entry has a roleId.
 export function isSelfRolesEnabled() {
