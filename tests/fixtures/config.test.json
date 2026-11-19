@@ -1,0 +1,208 @@
+{
+  "prefix": "=",
+  "guildId": "1900000000000000002",
+  "botName": "Opus System (Test)",
+  "developerCredit": "",
+  "muteRoleId": "1900000000000000022",
+  "muteRoleName": "Muted",
+  "modRoleId": "1900000000000000011",
+  "modLogChannelId": "1900000000000000014",
+  "auditLogChannelId": "1900000000000000027",
+  "botRoleId": "1900000000000000020",
+  "botRoleName": "Opus System",
+  "botPermsRoleId": "",
+  "botPermsRoleName": "Opus System Perms",
+  "botsRoleId": "",
+  "botsRoleName": "Bots",
+  "mutedBotCmdsChannelId": "1900000000000000023",
+  "botStatusChannelId": "1900000000000000004",
+  "serverStatsChannelId": "1900000000000000003",
+  "serverStatsVoiceChannelId": "",
+  "tickets": {
+    "panelChannelId": "1900000000000000007",
+    "staffRoleId": "1900000000000000017",
+    "staffRoleIds": [
+      "1900000000000000011",
+      "1900000000000000010",
+      "1900000000000000040"
+    ],
+    "generalCategoryId": "1900000000000000031",
+    "generalCategoryName": "\u2743 \u30fb\ud835\ude4f\ud835\ude44\ud835\ude3e\ud835\ude46\ud835\ude40\ud835\ude4f\ud835\ude4e - \ud835\ude42\ud835\ude40\ud835\ude49\ud835\ude40\ud835\ude4d\ud835\ude3c\ud835\ude47",
+    "applicationCategoryId": "1900000000000000036",
+    "applicationCategoryName": "\u2743 \u30fb\ud835\ude4f\ud835\ude44\ud835\ude3e\ud835\ude46\ud835\ude40\ud835\ude4f\ud835\ude4e - \ud835\ude3c\ud835\ude4b\ud835\ude4b\ud835\ude47\ud835\ude44\ud835\ude3e\ud835\ude3c\ud835\ude4f\ud835\ude44\ud835\ude4a\ud835\ude49\ud835\ude4e",
+    "logChannelId": "1900000000000000028",
+    "archiveCategoryId": "1900000000000000019",
+    "archiveCategoryName": "[ ARCHIVE ]",
+    "typeCategoryIds": {
+      "priority": "1900000000000000030",
+      "general": "1900000000000000031",
+      "technical": "1900000000000000032",
+      "bugs": "1900000000000000033",
+      "appeal": "1900000000000000034",
+      "account": "1900000000000000035",
+      "application": "1900000000000000036",
+      "purchases": "1900000000000000037",
+      "security": "1900000000000000038"
+    },
+    "supportRoleId": "1900000000000000043",
+    "supportTypeKeys": [
+      "general",
+      "technical",
+      "bugs",
+      "account",
+      "purchases"
+    ]
+  },
+  "createVoice": {
+    "lobbyChannelId": "1900000000000000029"
+  },
+  "welcome": {
+    "channelId": "1900000000000000005",
+    "rulesChannelId": "1900000000000000006"
+  },
+  "verify": {
+    "enabled": true,
+    "channelId": "1900000000000000016",
+    "channelName": "verify",
+    "gate": null
+  },
+  "selfRoles": {
+    "channelId": "",
+    "channelName": "self-role",
+    "roles": []
+  },
+  "doNotType": {
+    "channelId": "",
+    "action": "alert",
+    "purgeMinutes": 30,
+    "rejoinUrl": ""
+  },
+  "warnEscalation": {
+    "threshold": 0,
+    "duration": "1h"
+  },
+  "verifiedRoleId": "1900000000000000024",
+  "verifiedRoleName": "Verified",
+  "unlinkedRoleId": "1900000000000000025",
+  "linkedRoleId": "1900000000000000026",
+  "serverManagedByOpusManager": true,
+  "overlay": {
+    "enabled": false,
+    "eventChannelId": ""
+  },
+  "protectedRoleIds": [
+    "1900000000000000009",
+    "1900000000000000010",
+    "1900000000000000039",
+    "1900000000000000021",
+    "1900000000000000011",
+    "1900000000000000017",
+    "1900000000000000043",
+    "1900000000000000040",
+    "1900000000000000048",
+    "1900000000000000050"
+  ],
+  "muteInternalCategoryIds": [
+    "1900000000000000013",
+    "1900000000000000041"
+  ],
+  "moderatorRoleIds": [
+    "1900000000000000017",
+    "1900000000000000040",
+    "1900000000000000048"
+  ],
+  "boosts": {
+    "channelId": "1900000000000000044"
+  },
+  "nicknames": {
+    "enabled": false,
+    "rolePrefixes": [
+      {
+        "roleId": "1900000000000000009",
+        "prefix": "Owner"
+      },
+      {
+        "roleId": "1900000000000000040",
+        "prefix": "Manager"
+      },
+      {
+        "roleId": "1900000000000000010",
+        "prefix": "Dev"
+      },
+      {
+        "roleId": "1900000000000000011",
+        "prefix": "Admin"
+      },
+      {
+        "roleId": "1900000000000000017",
+        "prefix": "Mod"
+      },
+      {
+        "roleId": "1900000000000000043",
+        "prefix": "Support"
+      },
+      {
+        "roleId": "1900000000000000039",
+        "prefix": "Artist"
+      },
+      {
+        "roleId": "1900000000000000021",
+        "prefix": "Tester"
+      },
+      {
+        "roleId": "1900000000000000012",
+        "prefix": "Creator"
+      }
+    ]
+  },
+  "botControlRoleIds": [
+    "1900000000000000047",
+    "1900000000000000048"
+  ],
+  "seniorModeratorRoleIds": [
+    "1900000000000000040",
+    "1900000000000000048"
+  ],
+  "teamRoleIds": [
+    "1900000000000000009",
+    "1900000000000000040",
+    "1900000000000000010",
+    "1900000000000000011",
+    "1900000000000000017",
+    "1900000000000000043",
+    "1900000000000000039",
+    "1900000000000000021",
+    "1900000000000000012",
+    "1900000000000000048",
+    "1900000000000000045",
+    "1900000000000000046",
+    "1900000000000000047"
+  ],
+  "roleBranches": {
+    "staff": [
+      "1900000000000000009",
+      "1900000000000000040",
+      "1900000000000000011",
+      "1900000000000000017",
+      "1900000000000000043"
+    ],
+    "development": [
+      "1900000000000000048",
+      "1900000000000000010"
+    ],
+    "specialties": [
+      "1900000000000000045",
+      "1900000000000000046",
+      "1900000000000000047"
+    ],
+    "founder": "1900000000000000009",
+    "manager": "1900000000000000040",
+    "principal": "1900000000000000048",
+    "developer": "1900000000000000010"
+  },
+  "logChannels": {
+    "automodChannelId": "1900000000000000042",
+    "blacklistChannelId": "1900000000000000015"
+  },
+  "developmentAccessRoleId": "1900000000000000050"
+}

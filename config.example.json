@@ -1,0 +1,129 @@
+{
+  "prefix": "=",
+  "guildId": "",
+  "botName": "Opus System",
+  "developerCredit": "",
+  "muteRoleId": "",
+  "muteRoleName": "Muted",
+  "modRoleId": "",
+  "modLogChannelId": "",
+  "auditLogChannelId": "",
+  "botRoleId": "",
+  "botRoleName": "Opus System",
+  "botPermsRoleId": "",
+  "botPermsRoleName": "Opus System Perms",
+  "botsRoleId": "",
+  "botsRoleName": "Bots",
+  "mutedBotCmdsChannelId": "",
+  "botStatusChannelId": "",
+  "serverStatsChannelId": "",
+  "serverStatsVoiceChannelId": "",
+  "tickets": {
+    "panelChannelId": "",
+    "staffRoleId": "",
+    "staffRoleIds": [],
+    "generalCategoryId": "",
+    "generalCategoryName": "General Tickets",
+    "applicationCategoryId": "",
+    "applicationCategoryName": "Staff Applications",
+    "logChannelId": "",
+    "archiveCategoryId": "",
+    "archiveCategoryName": "Ticket Archive",
+    "typeCategoryIds": {
+      "priority": "",
+      "general": "",
+      "technical": "",
+      "bugs": "",
+      "appeal": "",
+      "account": "",
+      "application": "",
+      "purchases": "",
+      "security": ""
+    },
+    "supportRoleId": "",
+    "supportTypeKeys": [
+      "general",
+      "technical",
+      "bugs",
+      "account",
+      "purchases"
+    ]
+  },
+  "createVoice": {
+    "lobbyChannelId": ""
+  },
+  "welcome": {
+    "channelId": "",
+    "rulesChannelId": ""
+  },
+  "verify": {
+    "enabled": false,
+    "channelId": "",
+    "channelName": "verify",
+    "gate": null
+  },
+  "selfRoles": {
+    "channelId": "",
+    "channelName": "self-role",
+    "roles": []
+  },
+  "doNotType": {
+    "channelId": "",
+    "action": "alert",
+    "purgeMinutes": 30,
+    "rejoinUrl": ""
+  },
+  "warnEscalation": {
+    "threshold": 0,
+    "duration": "1h"
+  },
+  "verifiedRoleId": "",
+  "verifiedRoleName": "Verified",
+  "unlinkedRoleId": "",
+  "linkedRoleId": "",
+  "serverManagedByOpusManager": true,
+  "overlay": {
+    "enabled": false,
+    "eventChannelId": ""
+  },
+  "protectedRoleIds": [],
+  "muteInternalCategoryIds": [],
+  "moderatorRoleIds": [],
+  "boosts": {
+    "channelId": ""
+  },
+  "nicknames": {
+    "enabled": false,
+    "rolePrefixes": []
+  },
+  "botControlRoleIds": [],
+  "teamRoleIds": [],
+  "seniorModeratorRoleIds": [],
+  "roleBranches": {
+    "staff": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "development": [
+      "",
+      ""
+    ],
+    "specialties": [
+      "",
+      "",
+      ""
+    ],
+    "founder": "",
+    "manager": "",
+    "principal": "",
+    "developer": ""
+  },
+  "logChannels": {
+    "automodChannelId": "",
+    "blacklistChannelId": ""
+  },
+  "developmentAccessRoleId": ""
+}

@@ -1,0 +1,132 @@
+# Opus System
+
+**Official Discord bot for the Opus Client community.**
+
+[Website](https://opusclient.com) · [Getting started](docs/SETUP.md) · [Team permissions](docs/PERMISSIONS.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md)
+
+Opus System handles Discord moderation, support tickets, staff and developer permissions, verification, community events and audit trails. The application is called **Opus System**; this repository is named **discord-bot** to reflect its scope.
+
+> This is the Discord bot, **not** the Opus Client launcher, game client, website, account backend or Discord server-layout manager.
+
+## What it does
+
+| Area | Features |
+| --- | --- |
+| Team management | Staff and Development branches, promotions/demotions, position history, automatic consistency checks, restricted access roles |
+| Moderation | Warnings, mutes, bans, kicks, punishments, blacklists, role-aware authorization, punishment history |
+| Support | Nine ticket categories, Components V2 panel, staff claim/unclaim, per-user and per-role access, HTML transcripts |
+| Account and onboarding | Verification, Linked / Unlinked account status, self-roles, signed account-link callback |
+| Auditing | Message edits/deletions, guild audit entries, moderation actions, AutoMod events and ticket records |
+| Community | Invite attribution, boost notifications, welcome messages, user profiles, temporary voice channels |
+| Operations | Guild-scoped slash commands, live command sync, restart and setup controls, SQLite persistence |
+
+All **24 slash commands** are registered to the configured Discord guild. Responses are public by default; use **`hide: Yes`** when a command offers that option and a private response is preferred. Buttons and menus that handle private account or ticket details can remain ephemeral independently.
+
+## Quick start
+
+**Requirements:** Node.js **23.4 or newer**, npm, a Discord application/bot, and an existing Discord server where the bot is allowed to operate.
+
+```bash
+git clone https://github.com/opusclient/discord-bot.git
+cd discord-bot
+npm ci
+cp .env.example .env
+cp config.example.json config.json
+```
+
+1. Set `DISCORD_TOKEN` and `CLIENT_ID` in `.env`.
+2. Fill in `guildId` and the role/channel IDs for **your own server** in `config.json`. Never use the included synthetic test IDs on a real guild.
+3. Enable the required Gateway intents in the Discord Developer Portal: Server Members, Message Content and Presence (when needed by enabled features).
+4. Give the bot appropriate role hierarchy and permissions, including Manage Roles, Manage Channels, Manage Messages and View Audit Log as required for the features you enable.
+5. Run the checks, register the guild commands, then start:
+
+```bash
+npm test
+npm run deploy -- --check
+npm run deploy
+npm start
+```
+
+`npm test` uses a **fully synthetic configuration fixture** and does not require a Discord token or contact Discord. `npm run deploy` **does contact Discord** and changes the guild command registry; run it only after reviewing the bot identity and guild ID.
+
+For setup prerequisites, feature-specific configuration and safe deployment, see [docs/SETUP.md](docs/SETUP.md).
+
+## Team structure
+
+Staff and Development are **separate permission branches**, not one shared promotion ladder.
+
+```text
+Founder (Discord server owner)
+└── Manager
+    ├── Staff
+    │   └── Adminstrator > Moderator > Support
+    └── Development
+        ├── Principal Engineer
+        └── Developer
+            ├── Backend Developer
+            ├── Frontend Developer
+            └── Discord Developer
+```
+
+The diagram represents **responsibility**, not every native Discord role position. In particular:
+
+- Normal Staff members hold only their highest applicable Staff rank.
+- Ordinary Development members may also hold a Staff role; Staff promotion and demotion still follow the Staff ladder.
+- **Discord Developer** is the special case: it has a configured native Discord Administrator permission and **must not hold a Staff rank**.
+- **Manager** has broad, explicitly configured server/channel permissions but **does not automatically have the Administrator flag**. Moderation actions are performed through the bot's authorization checks.
+- **Development Access** is a restricted **functional access role**, not a Staff or Development rank. Only Founder/Manager can assign or revoke it through the bot; the bot rejects redundant assignment to someone already entitled to Development access.
+- The actual server owner is treated specially by role reconciliation to avoid unintended modifications to the owner account.
+- The bot's own managed roles must remain above the roles it needs to modify.
+
+Full permission rules, self-role restrictions, hierarchy checks, exceptions and sample scenarios: **[docs/PERMISSIONS.md](docs/PERMISSIONS.md)**.
+
+## Ticket support
+
+The public ticket panel uses **Discord Components V2**. It displays Support, Reports, Appeals, Applications and Priority categories, live counts, a category selector, and **My Tickets / Ticket Status / Support Guide** buttons.
+
+`/ticket add` and `/ticket remove` manage access either to the **current ticket** or to **all tickets** through an explicit scope selection. A direct user removal overrides ordinary role-based access; removing one role does **not** remove access granted by another role. **[Details](docs/TICKETS.md)**
+
+## Codebase
+
+```text
+src/
+  commands/       Guild slash commands
+  events/         Discord Gateway event handlers
+  services/       Business logic, permissions, tickets and automation
+  ticket-actions/ Ticket operation handlers
+  utils/          Shared validation and presentation helpers
+  db.js           SQLite schema, statements and data access
+  config.js       Config loading and persistence
+  index.js        Bot entry point
+  deploy-commands.js  Guild command registration
+scripts/
+  list-ids.js     Discover role/channel IDs for configuration
+  test.mjs        Run tests against the synthetic config fixture
+tests/
+  fixtures/       Synthetic test configuration; no production IDs
+docs/             Operational and technical documentation
+```
+
+SQLite files, logs, runtime dumps, secrets and actual guild configuration are deliberately excluded from version control. This repository starts from a new **sanitized public history** and does not include historical production snapshots.
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Setup and configuration](docs/SETUP.md) | Discord application, intents, `.env`, IDs and startup |
+| [Architecture](docs/ARCHITECTURE.md) | Component boundaries, Gateway events, persistence and command sync |
+| [Role and permission system](docs/PERMISSIONS.md) | Staff/Dev hierarchy, Discord Developer, Manager, access roles and self-management |
+| [Commands and features](docs/COMMANDS.md) | Slash command reference, logging, verification, invites and moderation |
+| [Ticket lifecycle](docs/TICKETS.md) | Permissions, claims, transcripts, support categories |
+| [Deployment and operations](docs/OPERATIONS.md) | Testing, backups, restarts, logs and troubleshooting |
+| [Optional integrations](docs/INTEGRATIONS.md) | Signed account link and experimental integrations |
+
+## Contributions and security
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Do **not** submit secrets, private member data, ticket transcripts, exploit credentials or live production configuration.
+
+For vulnerabilities, use GitHub's private vulnerability reporting when available, or follow [SECURITY.md](SECURITY.md). Public issues are not the appropriate place for undisclosed security problems.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE). The source license does not grant rights to the Opus Client name, logo or other trademarks.
