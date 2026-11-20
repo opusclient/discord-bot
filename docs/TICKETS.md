@@ -70,4 +70,4 @@ Opening a ticket, claiming/unclaiming it, renaming it and changing its access cr
 
 Closing generates an HTML transcript and uploads it to the configured ticket logs. The bot keeps the ticket open if transcript generation or upload fails; losing the channel without a transcript is not treated as success. Ticket records maintain the final status and history.
 
-Ticket messages can contain personal or security-sensitive information. Never publish live transcripts or runtime SQLite data in GitHub.
+Ticket messages can contain personal or security-sensitive information. **Do not grant the limited Support role access to the entire `ticket-logs` channel**, because it includes transcripts from Security and Appeals tickets outside Support's permitted categories. Restrict transcript logs to appropriately authorized staff. Never publish live transcripts or runtime SQLite data in GitHub.
