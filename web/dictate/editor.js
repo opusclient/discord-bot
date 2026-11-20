@@ -8,8 +8,7 @@
     format: $('format'), formatOptions: $('format-options'), title: $('title'),
     color: $('color'), colorPicker: $('color-picker'), content: $('content'),
     counter: $('counter'), preview: $('preview-message'),
-    selectedDestination: $('selected-destination'), selectedFormat: $('selected-format'),
-    mentionCount: $('mention-count'), publish: $('publish'),
+    publish: $('publish'),
     mentionPerson: $('mention-person'), mentionChannel: $('mention-channel'),
     picker: $('picker'), pickerTitle: $('picker-title'), pickerClose: $('picker-close'),
     pickerTabs: $('picker-tabs'), pickerSearch: $('picker-search'),
@@ -92,12 +91,6 @@
     el.counter.textContent = value.length + ' / ' + max;
     el.counter.classList.toggle('over', value.length > max);
     el.formatOptions.hidden = el.format.value !== 'embed';
-    el.selectedFormat.textContent = el.format.value === 'embed' ? 'Embed' : 'Markdown text';
-    el.selectedDestination.textContent =
-      data.channelOptions.find(item => item.id === el.destination.value)?.label ?? 'Not selected';
-    el.mentionCount.textContent = String(new Set([
-      ...value.matchAll(/<@!?\d{16,23}>|<@&\d{16,23}>|<#\d{16,23}>/g)
-    ].map(match => match[0])).size);
     if (!value.trim() && !el.title.value.trim()) {
       el.preview.className = 'preview-message empty';
       el.preview.textContent = 'Your message will appear here as you write.';

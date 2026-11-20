@@ -18,14 +18,14 @@ test('minimal editor layout preserves all interactive surfaces', () => {
   const required = [
     'workspace', 'error', 'error-message', 'status', 'expires', 'destination',
     'format', 'format-options', 'title', 'color', 'color-picker', 'content',
-    'counter', 'preview-message', 'selected-destination', 'selected-format',
-    'mention-count', 'publish', 'mention-person', 'mention-channel', 'picker',
+    'counter', 'preview-message', 'publish', 'mention-person', 'mention-channel', 'picker',
     'picker-title', 'picker-close', 'picker-tabs', 'picker-search',
     'picker-results', 'confirm', 'confirm-text', 'confirm-publish',
     'publish-error', 'cancel', 'draft-status'
   ];
   for (const id of required) assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(html, /Compose a message/);
+  assert.match(html, /<h2>Compose<\/h2>/);
   assert.match(html, /Add user \/ role/);
   assert.match(html, /Add channel/);
+  assert.doesNotMatch(html, /brandmark|message-avatar|topbar|page-intro|details-card|<footer/);
 });

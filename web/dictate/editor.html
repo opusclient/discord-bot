@@ -1,36 +1,11 @@
 <div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brandmark" aria-hidden="true">O</div>
-      <div class="brand-copy">
-        <span class="eyebrow">OPUS SYSTEM</span>
-        <strong class="brand-name">Dictate</strong>
-      </div>
-    </div>
-    <div class="topmeta">
-      <span class="live-dot" aria-hidden="true"></span>
-      <span id="status">Opening session</span>
-    </div>
-  </header>
-
-  <section class="page-intro">
-    <div>
-      <div class="breadcrumb">SYSTEM <span>/</span> COMMUNICATION <span>/</span> DICTATE</div>
-      <h1>Compose a message</h1>
-      <p>Create and review an announcement before publishing it through Opus System.</p>
-    </div>
-    <div class="session-label">
-      <span>PRIVATE WORKSPACE</span>
-      <strong>One-time publication</strong>
-    </div>
-  </section>
-
   <main class="workspace" id="workspace" hidden>
+    <span id="status" hidden></span>
     <section class="compose card">
       <div class="heading">
         <div>
-          <span class="section-number">01 / MESSAGE</span>
-          <h2>Message settings</h2>
+
+          <h2>Compose</h2>
         </div>
         <span class="expires" id="expires">Private session</span>
       </div>
@@ -64,7 +39,7 @@
 
       <div class="editor-head">
         <div>
-          <span class="section-number">02 / CONTENT</span>
+
           <h2>Message content</h2>
           <p class="field-help">Write your message, then insert references at the cursor.</p>
         </div>
@@ -108,40 +83,17 @@
       <section class="card preview-card">
         <div class="heading preview-heading">
           <div>
-            <span class="section-number">03 / PREVIEW</span>
-            <h2>Message preview</h2>
+            <h2>Live preview</h2>
           </div>
-          <span class="preview-pill">LIVE</span>
         </div>
         <div class="preview-body">
-          <div class="message-avatar" aria-hidden="true">O</div>
           <div class="message-area">
-            <div class="message-byline">
-              <strong>Opus System</strong>
-              <span class="app-tag">APP</span>
-              <span class="timestamp">Preview</span>
-            </div>
             <div id="preview-message" class="preview-message"></div>
           </div>
         </div>
-        <p class="preview-foot">This is a local preview. Mentions will not notify members until the message is published.</p>
-      </section>
-
-      <section class="card details-card">
-        <div class="heading details-heading">
-          <div>
-            <span class="section-number">04 / SUMMARY</span>
-            <h2>Publication details</h2>
-          </div>
-        </div>
-        <div class="detail-line"><span>Destination</span><strong id="selected-destination">Not selected</strong></div>
-        <div class="detail-line"><span>Format</span><strong id="selected-format">Embed</strong></div>
-        <div class="detail-line"><span>Mentions</span><strong id="mention-count">0</strong></div>
-        <div class="detail-line"><span>Session</span><strong>Single publication</strong></div>
       </section>
     </aside>
   </main>
-
   <section class="error-card" id="error" hidden>
     <span class="section-number">SESSION UNAVAILABLE</span>
     <h2>Unable to open the editor</h2>
@@ -149,10 +101,6 @@
     <p>Use <code>/dictate</code> in Discord to request a new private link.</p>
   </section>
 
-  <footer>
-    <span>OPUS SYSTEM</span>
-    <span>PRIVATE EDITOR · LINK VALID FOR 15 MINUTES</span>
-  </footer>
 </div>
 
 <dialog id="confirm">

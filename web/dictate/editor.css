@@ -192,8 +192,9 @@ h1 {
 }
 
 .workspace {
+  padding-top: 24px;
   display: grid;
-  grid-template-columns: minmax(0, 1.32fr) minmax(300px, .84fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, .8fr);
   align-items: start;
   gap: 18px;
 }
@@ -526,7 +527,7 @@ textarea:focus {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  min-height: 205px;
+  min-height: 300px;
   padding: 18px 15px;
   border: 1px solid var(--border-soft);
   border-radius: 6px;
@@ -956,3 +957,5 @@ dialog::backdrop {
     scroll-behavior: auto !important;
   }
 }
+
+@media(max-width:670px){.workspace{padding-top:14px}}
