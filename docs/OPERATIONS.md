@@ -50,7 +50,7 @@ In production, run the bot under a supervisor such as systemd, a service manager
 - `/help` and `/info` respond for authorized users.
 - The Support Center panel has nine categories, a working select/modal and private action responses.
 - Role reconciliation preserves Staff/Development independence and the Discord Developer exception.
-- The bot can write to configured moderation, audit, AutoMod, blacklist and ticket logs.
+- The bot can write to exactly four configured destinations: audit, moderation (including blacklist and member message edits/deletes), AutoMod and tickets.
 - Invite tracking creates a snapshot; unambiguous new joins count correctly.
 - Ticket closures produce transcripts and do not lose open tickets if upload fails.
 
@@ -67,7 +67,9 @@ In production, run the bot under a supervisor such as systemd, a service manager
 | Ticket user remains after removing a role | Another role grants access; use direct user removal if appropriate |
 | Invite total is lower than link usage count | Only unambiguous tracked member joins count; old uses and unknown joins are excluded |
 | Ticket panel doesn't refresh | Channel/message ID wrong or missing channel permissions |
-| Message contents absent from audit | Discord Gateway/cache cannot always recover edited/deleted messages |
+| Message contents absent from moderation logs | Discord Gateway/cache cannot always recover edited/deleted messages |
+| Message edits or deletes appear in audit logs | New message activity should be sent to moderation; verify deployment and review historical entries from before the routing change |
+| New blacklist records appear in an archived blacklist channel | The bot should route blacklist cases to moderation; update to the four-log routing release |
 | Some log channels are silent | Channel IDs or send permissions missing, or no corresponding event yet |
 
 ## Release safety

@@ -1,11 +1,25 @@
 import { AuditLogEvent, ChannelType, PermissionsBitField } from 'discord.js';
 import { config, updateFileConfig } from '../config.js';
 import { COLORS } from '../constants.js';
-import { deleteInstallMessage, getInstallMessage, setInstallMessage } from '../db.js';
+import { deleteInstallMessage, getInstallMessage, getTicketByChannel, setInstallMessage } from '../db.js';
 import { baseEmbed, truncate } from '../utils/embeds.js';
 import { getDeletedMessageMedia, clearDeletedMessageMedia } from './deletedMediaCache.js';
+import { sendMessageActivityLog } from './log.js';
 
 export const AUDIT_LOG_MESSAGE_KEY = 'audit_log';
+
+export function shouldLogMessageActivity(guildId, channelId) {
+  if (!guildId || guildId !== config.guildId || !config.modLogChannelId || !channelId) {
+    return false;
+  }
+  if ([config.auditLogChannelId, config.modLogChannelId,
+       config.tickets?.logChannelId,
+       config.logChannels?.automodChannelId,
+       config.logChannels?.blacklistChannelId].filter(Boolean).includes(channelId)) {
+    return false;
+  }
+  return !getTicketByChannel(guildId, channelId);
+}
 
 const AUDIT_CHANNEL_NAME = 'audit-log';
 
@@ -77,10 +91,10 @@ function buildAuditLogNotice(guild) {
     'Configuration, roles, permissions, channels, integrations, invites, webhooks, threads, emoji, and server settings.',
     '',
     '**Member role and nickname changes** — actor, target and changes recorded by Discord.',
-    '**Message edits and deletes** — content when cached, location and available attribution.',
+    '**Message activity** — edits, deletions and bulk removals go to #moderation-logs, not here.',
     '**Automod rules** — creation, modification and removal.',
     '',
-    'Moderation cases go to #moderation-logs; automated enforcement goes to #automod-logs; blacklist records and ticket transcripts have separate channels.',
+    'Staff actions and blacklist cases go to #moderation-logs. Automated actions go to #automod-logs. Private transcripts go to #ticket-logs.',
     'Discord does not provide the contents of every uncached or deleted message. Audit attribution is shown only when verified.',
   ];
   return {
@@ -184,7 +198,7 @@ function memberCard(embed, author, authorId, footerId) {
 export async function logDeletedMessage(client, message) {
   const guild = message?.guild;
   if (!guild || guild.id !== config.guildId) return null;
-  if (!config.auditLogChannelId || message.channel.id === config.auditLogChannelId) return null;
+  if (!shouldLogMessageActivity(message.guild.id, message.channel.id)) return null;
 
   const authorId = message.author?.id ?? null; // partial messages carry nothing but ids
   // Never log the bot's own messages - sweeps and cleanups delete enough of them.
@@ -248,7 +262,7 @@ export async function logDeletedMessage(client, message) {
     embed.setDescription(lines.concat('', '_Image preview unavailable: not cached before deletion._').join('\n'));
   }
 
-  const sent = await sendAuditLog(guild, embed, { files: cachedImages });
+  const sent = await sendMessageActivityLog(guild, embed, { files: cachedImages });
   if (sent) await clearDeletedMessageMedia(message.id);
   return sent;
 }
@@ -264,7 +278,7 @@ const fmtSize = (bytes) => {
 export async function logEditedMessage(client, oldMessage, newMessage) {
   const guild = newMessage?.guild;
   if (!guild || guild.id !== config.guildId) return null;
-  if (!config.auditLogChannelId || newMessage.channel.id === config.auditLogChannelId) return null;
+  if (!shouldLogMessageActivity(newMessage.guild.id, newMessage.channel.id)) return null;
   const author = newMessage.author;
   if (!author || author.bot || newMessage.webhookId) return null; // bot/webhook edits are noise
 
@@ -288,7 +302,7 @@ export async function logEditedMessage(client, oldMessage, newMessage) {
     .setTimestamp(Date.now());
   memberCard(embed, author, author.id);
 
-  return sendAuditLog(guild, embed);
+  return sendMessageActivityLog(guild, embed);
 }
 
 // ---------- Bulk Delete ----------
@@ -296,7 +310,7 @@ export async function logEditedMessage(client, oldMessage, newMessage) {
 export async function logBulkDeleted(client, channel, messages) {
   const guild = channel?.guild;
   if (!guild || guild.id !== config.guildId) return null;
-  if (!config.auditLogChannelId || channel.id === config.auditLogChannelId) return null;
+  if (!shouldLogMessageActivity(channel.guild.id, channel.id)) return null;
 
   const entry = await findAuditEntry(guild, AuditLogEvent.MessageBulkDelete, { channelId: channel.id });
   const executor = entry?.executor ?? null;
@@ -330,5 +344,5 @@ export async function logBulkDeleted(client, channel, messages) {
     .setTimestamp(Date.now());
   if (entry?.reason) embed.addFields({ name: 'Reason', value: truncate(entry.reason, 100) });
 
-  return sendAuditLog(guild, embed);
+  return sendMessageActivityLog(guild, embed);
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { AuditLogEvent } from 'discord.js';
 import { config } from '../src/config.js';
 import { auditDestination, auditActionName, auditChangeLabel, buildGuildAuditEmbed } from '../src/services/guildAuditEvents.js';
-import { execute as eventHandler } from '../src/events/guildAuditLogEntryCreate.js';
+import { execute as eventHandler, isTicketAuditEntry } from '../src/events/guildAuditLogEntryCreate.js';
 import { execute as automodHandler } from '../src/events/autoModerationActionExecution.js';
 import { sendAutoModLog, sendBlacklistLog, logCase } from '../src/services/log.js';
 
@@ -37,6 +37,20 @@ const makeGuild=()=>{
 };
 const count=(sent,id)=>sent.get(id)?.length??0;
 
+test('ticket channel audit events stay in ticket records, not guild configuration audit',async()=>{
+  const ticketCategoryId = config.tickets.typeCategoryIds.general;
+  const generated = entry(AuditLogEvent.ChannelCreate, [], {
+    target: { id: '123456789012345633', parentId: ticketCategoryId }
+  });
+  assert.equal(isTicketAuditEntry(generated, config.guildId), true);
+  assert.equal(isTicketAuditEntry(entry(AuditLogEvent.ChannelCreate, [], {
+    target: { id: '123456789012345634', parentId: '123456789012345635' }
+  }), config.guildId), false);
+  const {guild,sent} = makeGuild();
+  await eventHandler(generated, guild, { user: { id: botId } });
+  assert.equal(count(sent, config.auditLogChannelId), 0);
+});
+
 test('audit action names are human-readable',()=>{
   assert.equal(auditActionName(AuditLogEvent.RoleUpdate),'Role Update');
   assert.equal(auditActionName(AuditLogEvent.ChannelOverwriteUpdate),'Channel Overwrite Update');
@@ -68,9 +82,9 @@ test('direct bans, kicks and timeouts remain moderation events',()=>{
   assert.equal(auditDestination(entry(AuditLogEvent.MemberUpdate,[{key:'nick',new:'new name'}]),{botId}),'audit');
 });
 
-test('manual mute role updates have both moderation record and audit trace',()=>{
+test('manual mute role updates emit only the security record',()=>{
   const muted=entry(AuditLogEvent.MemberRoleUpdate,[{key:'$add',new:[{id:config.muteRoleId,name:'Muted'}]}]);
-  assert.equal(auditDestination(muted,{botId,muteRoleId:config.muteRoleId}),'moderation-and-audit');
+  assert.equal(auditDestination(muted,{botId,muteRoleId:config.muteRoleId}),'moderation');
   assert.equal(auditDestination({...muted,executorId:botId},{botId,muteRoleId:config.muteRoleId}),'audit');
 });
 
@@ -80,11 +94,11 @@ test('message delete/bulk delete do not duplicate existing message gateway logs'
   }
 });
 
-test('Discord automod executions are routed to automod channel',()=>{
+test('Discord automod audit entries skip duplicate gateway execution logs',()=>{
   for(const action of [AuditLogEvent.AutoModerationBlockMessage,
     AuditLogEvent.AutoModerationFlagToChannel,
     AuditLogEvent.AutoModerationUserCommunicationDisabled]){
-    assert.equal(auditDestination(entry(action),{botId}),'automod');
+    assert.equal(auditDestination(entry(action),{botId}),'none');
   }
 });
 
@@ -123,7 +137,7 @@ test('guild audit gateway event emits one correct channel log per event',async()
     key:'$add',new:[{id:config.muteRoleId,name:'Muted'}]
   }]);
   await eventHandler(mute,guild,client);
-  assert.equal(count(sent,config.auditLogChannelId),2);
+  assert.equal(count(sent,config.auditLogChannelId),1);
   assert.equal(count(sent,config.modLogChannelId),1);
   assert.deepEqual(sent.get(config.auditLogChannelId)[0].allowedMentions,{parse:[]});
 });
@@ -141,7 +155,7 @@ test('native automod gateway execution creates a scoped anonymized log card',asy
   assert.match(serialized,new RegExp(target));
 });
 
-test('blacklist cases route exclusively to blacklist records',async()=>{
+test('blacklist cases share the security log destination',async()=>{
   const {guild,sent}=makeGuild();
   const caseRow={
     case_number:120,user_id:target,moderator_id:actor,
@@ -149,11 +163,11 @@ test('blacklist cases route exclusively to blacklist records',async()=>{
     created_at:Date.now()
   };
   await logCase(guild,caseRow,{clientId:botId});
-  assert.equal(count(sent,config.logChannels.blacklistChannelId),1);
-  assert.equal(count(sent,config.modLogChannelId),0);
+  assert.equal(count(sent,config.logChannels.blacklistChannelId),0);
+  assert.equal(count(sent,config.modLogChannelId),1);
 });
 
-test('automated enforcement cases route to automod while human actions go to moderation',async()=>{
+test('automated enforcement routes separately from human moderation',async()=>{
   const {guild,sent}=makeGuild();
   const base={
     case_number:121,user_id:target,type:'mute',status:'active',
@@ -161,8 +175,8 @@ test('automated enforcement cases route to automod while human actions go to mod
   };
   await logCase(guild,{...base,moderator_id:botId},{clientId:botId});
   await logCase(guild,{...base,moderator_id:actor},{clientId:botId});
-  assert.equal(count(sent,config.logChannels.automodChannelId),1);
   assert.equal(count(sent,config.modLogChannelId),1);
+  assert.equal(count(sent,config.logChannels.automodChannelId),1);
 });
 
 test('automod alerts can ping only the configured Moderator role',async()=>{

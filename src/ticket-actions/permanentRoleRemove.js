@@ -1,8 +1,6 @@
 import { visibilityFlags } from '../utils/visibility.js';
-import { COLORS } from '../constants.js';
-import { sendModLog } from '../services/log.js';
-import { removeTicketStaffRole, ticketStaffRoleIds } from '../services/tickets.js';
-import { baseEmbed, errorEmbed, successEmbed } from '../utils/embeds.js';
+import { removeTicketStaffRole, ticketStaffRoleIds, logTicketActivity } from '../services/tickets.js';
+import { errorEmbed, successEmbed } from '../utils/embeds.js';
 import { ensureBotController, roleAssignabilityError } from '../utils/permissions.js';
 
 export async function execute(interaction) {
@@ -43,12 +41,6 @@ export async function execute(interaction) {
       : 'The extensible staff list is now empty.',
   );
 
-  await sendModLog(
-    interaction.guild,
-    baseEmbed(COLORS.audit)
-      .setTitle('Ticket Staff Updated')
-      .setDescription(`**Removed:** <@&${role.id}>\n**By:** <@${interaction.user.id}>`)
-      .setTimestamp(Date.now()),
-  );
+  await logTicketActivity(interaction.guild, null, 'Staff Access Revoked', interaction.user.id, '<@&' + role.id + '>');
   await interaction.editReply({ embeds: [successEmbed(lines.join('\n'), 'Ticket staff updated')] });
 }

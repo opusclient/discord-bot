@@ -66,6 +66,8 @@ The default scope is **Current ticket**. A permanent role change requires author
 
 ## Closing and transcripts
 
+Opening a ticket, claiming/unclaiming it, renaming it and changing its access create separate activity entries in `ticket-logs`. Permanent ticket staff access changes are also recorded there; these operations do **not** generate duplicate moderation cards.
+
 Closing generates an HTML transcript and uploads it to the configured ticket logs. The bot keeps the ticket open if transcript generation or upload fails; losing the channel without a transcript is not treated as success. Ticket records maintain the final status and history.
 
 Ticket messages can contain personal or security-sensitive information. Never publish live transcripts or runtime SQLite data in GitHub.

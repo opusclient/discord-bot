@@ -16,7 +16,7 @@ Opus System handles Discord moderation, support tickets, staff and developer per
 | Moderation | Warnings, mutes, bans, kicks, punishments, blacklists, role-aware authorization, punishment history |
 | Support | Nine ticket categories, Components V2 panel, staff claim/unclaim, per-user and per-role access, HTML transcripts |
 | Account and onboarding | Verification, Linked / Unlinked account status, self-roles, signed account-link callback |
-| Auditing | Message edits/deletions, guild audit entries, moderation actions, AutoMod events and ticket records |
+| Auditing | Four separate destinations: guild configuration audit, moderation (including message activity and blacklist), AutoMod and ticket history |
 | Community | Invite attribution, boost notifications, welcome messages, user profiles, temporary voice channels |
 | Operations | Guild-scoped slash commands, live command sync, restart and setup controls, SQLite persistence |
 

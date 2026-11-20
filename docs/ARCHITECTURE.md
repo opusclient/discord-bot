@@ -46,7 +46,7 @@ The event implementations are intentionally separate so a failed moderation noti
 | `src/services/roleOperations.js` | Bulk role commands, authorization, notifications and history |
 | `src/services/teamRoleHistory.js` | Structured promote/demote records |
 | `src/services/tickets.js` | Ticket panels, lifecycle, overwrites and transcripts |
-| `src/services/auditlog.js` | Message edit/delete audit |
+| `src/services/auditlog.js` | Member message edits/deletes routed to moderation, separate from guild configuration audit |
 | `src/services/guildAuditEvents.js` | Audit event classification, formatting and routing |
 | `src/services/inviteTracker.js` | Guild invite snapshots and join attribution |
 | `src/services/inviteHistory.js` | Invite join/leave records and member statistics |
@@ -102,17 +102,20 @@ For the full access model and critical direct-user-deny behavior, see [TICKETS.m
 
 ## Auditing and log routing
 
-The server can use five dedicated destinations:
+The bot uses **four active log destinations**, each with a single responsibility:
 
 | Destination | Events |
 | --- | --- |
-| `automod-logs` | Discord AutoMod, traps and automated enforcement |
-| `moderation-logs` | Staff-issued cases, direct Discord moderation and team role actions |
-| `blacklist-records` | Blacklist creation and clearance |
-| `audit-logs` | Guild, roles, channels, permissions, integration, invite and message audit |
-| `ticket-logs` | Ticket closures and transcripts |
+| `audit-logs` | Guild/server changes: roles, channels, permission overwrites, integrations, invites, webhooks and configuration |
+| `moderation-logs` | Staff-issued cases, manual moderation, blacklists, purges, member message edits/deletions and bulk deletions |
+| `automod-logs` | Discord AutoMod Gateway actions, bot-initiated enforcement, automated mutes and scheduled expirations |
+| `ticket-logs` | Ticket openings, claims/unclaims, renames, access changes, permanent ticket staff permissions, closures and HTML transcripts |
 
-The exact channel IDs are configured per installation. Audit entries and message Gateway events are classified to avoid obvious duplicate reporting. Some deleted or uncached message content and ambiguous authorship are unavailable from Discord; the bot does not invent them.
+The bot does **not** send member message content to `audit-logs`. Ticket channel audit actions are filtered to reduce duplicate records. One close transcript is sent to `ticket-logs`; a second `Ticket Closed` card is not posted to moderation.
+
+The legacy `blacklist-records` channel is no longer a write destination. Existing guild installations may archive it instead of deleting its history; `logChannels.blacklistChannelId` is retained as a legacy exclusion so changes inside a historical log channel are not mirrored as user message activity.
+
+The exact channel IDs are configured per installation. Discord Gateway data can omit deleted message content, so the bot records missing content or uncertain attribution explicitly instead of inventing it.
 
 ## Invite attribution
 

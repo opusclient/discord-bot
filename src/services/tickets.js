@@ -36,8 +36,7 @@ import {
   listTicketChannelIds,
   setInstallMessage,
 } from '../db.js';
-import { baseEmbed, buildAuditEmbed, ts, truncate } from '../utils/embeds.js';
-import { sendModLog } from './log.js';
+import { baseEmbed, ts, truncate } from '../utils/embeds.js';
 
 export const TICKET_PANEL_MESSAGE_KEY = 'ticket_panel';
 export const TICKET_BUTTON_ID = 'ticket_open';
@@ -685,6 +684,32 @@ async function sendTicketLog(guild, { channel, ticket, member, note, transcript 
     });
 }
 
+export async function logTicketActivity(guild, ticket, action, actorId, details = null) {
+  const channelId = config.tickets?.logChannelId;
+  if (!channelId || !guild || guild.id !== config.guildId) return null;
+  const channel = guild.channels?.cache?.get?.(channelId) ??
+    await guild.channels?.fetch?.(channelId).catch(() => null);
+  if (!channel?.isTextBased?.() || !channel?.send) return null;
+  const ticketLabel = ticket
+    ? '**Ticket:** #' + String(ticket.ticket_number ?? ticket.id).padStart(4, '0') +
+      ' (<#' + ticket.channel_id + '>)\n**Category:** ' +
+      (TICKET_TYPES[ticket.type]?.label ?? 'General') + '\n'
+    : '';
+  const embed = baseEmbed(COLORS.audit)
+    .setTitle('Ticket ' + action)
+    .setDescription(
+      ticketLabel +
+      '**Action by:** <@' + actorId + '>' +
+      (details ? '\n**Details:** ' + truncate(details, 500) : '')
+    )
+    .setTimestamp(Date.now());
+  return channel.send({ embeds: [embed], allowedMentions: { parse: [] } })
+    .catch(error => {
+      console.error('[tickets] Ticket activity log failed:', error.message);
+      return null;
+    });
+}
+
 // ---------- Open ----------
 
 // Creates the ticket channel in the per-type category (auto-created when missing).
@@ -818,6 +843,7 @@ export async function openTicket(interaction, client, typeKey = 'general', purpo
       .catch((err) => console.error('[tickets] Failed to post the application template:', err.message));
   }
 
+  await logTicketActivity(guild, ticket, 'Opened', interaction.user.id);
   return { ticket, channel };
   } finally {
     openingTickets.delete(openingKey);
@@ -840,6 +866,7 @@ export async function claimTicket(guild, ticket, member, client, action = 'toggl
       allowedMentions: { users: [] },
     }).catch(() => {});
   }
+  await logTicketActivity(guild, ticket, result.claimed ? 'Claimed' : 'Unclaimed', member.id);
   await refreshTicketPanelMessage(client).catch(() => {});
   return result;
 }
@@ -860,6 +887,7 @@ export async function renameTicket(guild, ticket, newName, member) {
   await channel.send({
     embeds: [baseEmbed(COLORS.info).setDescription('Ticket renamed to #' + name + ' by <@' + member.id + '>.')],
   }).catch(() => {});
+  await logTicketActivity(guild, ticket, 'Renamed', member.id, 'New name: ' + name);
   return { channel };
 }
 
@@ -887,6 +915,7 @@ export async function addToTicket(guild, ticket, target, member) {
     embeds: [baseEmbed(COLORS.info).setDescription(label + ' was added to this ticket by <@' + member.id + '>.')],
     allowedMentions: { parse: [] }
   }).catch(() => {});
+  await logTicketActivity(guild, ticket, 'Access Granted', member.id, label);
   return { channel };
 }
 
@@ -954,6 +983,7 @@ export async function removeFromTicket(guild, ticket, target, member) {
     embeds: [baseEmbed(COLORS.warn).setDescription(label + ' was removed from this ticket by <@' + member.id + '>.')],
     allowedMentions: { parse: [] }
   }).catch(() => {});
+  await logTicketActivity(guild, ticket, 'Access Revoked', member.id, label);
   return { channel };
 }
 
@@ -994,17 +1024,6 @@ export async function closeTicket(guild, ticket, member, note, client) {
     }
 
     closeTicketRow(ticket.id, { closedBy: member.id, note: note ? truncate(note, 500) : null });
-
-    const owner = await guild.members.fetch(ticket.owner_id).catch(() => null);
-    const typeLabel = TICKET_TYPES[ticket.type]?.label ?? 'General';
-    await sendModLog(guild, buildAuditEmbed({
-      title: 'Ticket Closed',
-      description: 'Ticket #' + channel.name + ' (' + typeLabel + ')' +
-        ' · opened by <@' + ticket.owner_id + '> · closed by <@' + member.id +
-        '>. Transcript saved to <#' + config.tickets.logChannelId + '>.',
-      color: COLORS.warn,
-      fields: note ? [{ name: 'Note', value: truncate(note, 400) }] : [],
-    })).catch(error => console.error('[tickets] Moderation log failed:', error.message));
 
     try {
       await channel.delete('Ticket closed by ' + member.id + ' with transcript saved');

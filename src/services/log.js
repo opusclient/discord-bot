@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import { buildCaseEmbed } from '../utils/embeds.js';
 
-export async function sendChannelLog(guild, channelId, embed, { content = null, allowedMentions = { parse: [] } } = {}) {
+export async function sendChannelLog(guild, channelId, embed, { content = null, files = [], allowedMentions = { parse: [] } } = {}) {
   try {
     if (!channelId || !guild || guild.id !== config.guildId) return null;
     const channel = guild.channels.cache.get(channelId) ??
@@ -13,6 +13,7 @@ export async function sendChannelLog(guild, channelId, embed, { content = null, 
     return await channel.send({
       content,
       embeds: [embed],
+      files,
       allowedMentions
     });
   } catch (error) {
@@ -30,7 +31,11 @@ export async function sendAutoModLog(guild, embed, options = {}) {
 }
 
 export async function sendBlacklistLog(guild, embed, options = {}) {
-  return sendChannelLog(guild, config.logChannels?.blacklistChannelId, embed, options);
+  return sendChannelLog(guild, config.modLogChannelId, embed, options);
+}
+
+export async function sendMessageActivityLog(guild, embed, options = {}) {
+  return sendChannelLog(guild, config.modLogChannelId, embed, options);
 }
 
 export async function logCase(guild, caseRow, { clientId = null } = {}) {

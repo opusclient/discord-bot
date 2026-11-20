@@ -1,9 +1,7 @@
 import { visibilityFlags } from '../utils/visibility.js';
 import { config } from '../config.js';
-import { COLORS } from '../constants.js';
-import { sendModLog } from '../services/log.js';
-import { addTicketStaffRole, ticketStaffRoleIds } from '../services/tickets.js';
-import { baseEmbed, errorEmbed, successEmbed } from '../utils/embeds.js';
+import { addTicketStaffRole, ticketStaffRoleIds, logTicketActivity } from '../services/tickets.js';
+import { errorEmbed, successEmbed } from '../utils/embeds.js';
 import { ensureBotController, roleAssignabilityError } from '../utils/permissions.js';
 
 export async function execute(interaction) {
@@ -37,12 +35,6 @@ export async function execute(interaction) {
     `Remove permanent access with \`/ticket remove role:@Role scope:All tickets\`. Temporary access uses \`scope:Current ticket\`.`,
   ];
 
-  await sendModLog(
-    interaction.guild,
-    baseEmbed(COLORS.audit)
-      .setTitle('Ticket Staff Updated')
-      .setDescription(`**Added:** <@&${role.id}>\n**By:** <@${interaction.user.id}>`)
-      .setTimestamp(Date.now()),
-  );
+  await logTicketActivity(interaction.guild, null, 'Staff Access Granted', interaction.user.id, '<@&' + role.id + '>');
   await interaction.editReply({ embeds: [successEmbed(lines.join('\n'), 'Ticket staff updated')] });
 }

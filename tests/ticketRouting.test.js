@@ -110,14 +110,14 @@ test('all ticket types use one numbering sequence and required transcript storag
   const closed=await closeTicket(guild,priority.ticket,staff,'Resolved',client);
   assert.equal(closed.closed,true);
   assert.equal(priority.channel.deleted,true);
-  assert.equal(logs.length,1);
-  assert.equal(logs[0].files.length,1);
-  assert.equal(logs[0].embeds[0].data.footer.text,'Ticket #0002');
+  assert.equal(logs.length,4);
+  assert.equal(logs.at(-1).files.length,1);
+  assert.equal(logs.at(-1).embeds[0].data.footer.text,'Ticket #0002');
   assert.deepEqual(getTicketStats(guildId),{open:1,claimed:0,closed:2});
   const generalClosed = await closeTicket(guild,general.ticket,staff,null,client);
   assert.equal(generalClosed.closed,true);
-  assert.equal(logs.length,2);
-  assert.equal(logs[1].embeds[0].data.footer.text,'Ticket #0003');
+  assert.equal(logs.length,5);
+  assert.equal(logs.at(-1).embeds[0].data.footer.text,'Ticket #0003');
   assert.deepEqual(getTicketStats(guildId),{open:0,claimed:0,closed:3});
 });
 

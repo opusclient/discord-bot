@@ -94,11 +94,13 @@ This excerpt illustrates the shape; merge it into `config.json`, not a replaceme
 | `verifiedRoleId`, `linkedRoleId`, `unlinkedRoleId` | Account and verification state |
 | `muteRoleId`, `modRoleId` | Mute and moderator integration |
 | `tickets` | Panel, staff access, type categories, transcripts and archive |
-| `modLogChannelId`, `auditLogChannelId`, `logChannels` | Moderation, audit, AutoMod and blacklist destinations |
+| `modLogChannelId`, `auditLogChannelId`, `logChannels.automodChannelId` | Dedicated moderation, guild audit and AutoMod channels; `tickets.logChannelId` is the fourth ticket log |
 | `verify`, `selfRoles`, `boosts`, `welcome` | Onboarding and community panels |
 | `createVoice`, `serverStatsVoiceChannelId` | Temporary voice and server statistics |
 | `overlay` | Optional integration; disable if unused |
 | `serverManagedByOpusManager` | Disables competing static-layout management |
+
+`logChannels.blacklistChannelId` is a legacy/archival channel reference; new blacklist cases go to `modLogChannelId`. Message edit/delete monitoring also routes to moderation, never audit.
 
 Any role IDs that form `roleBranches` must refer to existing, correct Discord roles. The bot validates these at runtime. Consult [PERMISSIONS.md](PERMISSIONS.md) before using promote/demote commands.
 

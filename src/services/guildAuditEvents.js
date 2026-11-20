@@ -52,13 +52,13 @@ const enumActions=new Map(Object.entries(AuditLogEvent)
 const humanize=str=>str.replace(/([a-z])([A-Z])/g,'$1 $2');
 
 export function auditActionName(action){
-  return humanize(enumActions.get(action)??'Unknown Audit Action');
+  return enumActions.has(action) ? humanize(enumActions.get(action)) : 'Discord Audit Event ' + String(action);
 }
 
 export function auditDestination(entry, {botId=null,muteRoleId=null}={}){
   if(!entry||typeof entry.action!=='number')return 'none';
   if(messageGatewayActions.has(entry.action))return 'none';
-  if(automaticActions.has(entry.action))return 'automod';
+  if(automaticActions.has(entry.action))return 'none';
   if(moderationActions.has(entry.action))return entry.executorId===botId?'none':'moderation';
   if(entry.action===AuditLogEvent.MemberUpdate &&
     (entry.changes??[]).some(c=>c.key==='communication_disabled_until')){
@@ -68,7 +68,7 @@ export function auditDestination(entry, {botId=null,muteRoleId=null}={}){
     entry.executorId!==botId &&
     (entry.changes??[]).some(c=>(c.key==='$add'||c.key==='$remove')&&
        Array.isArray(c.new)&&c.new.some(r=>r.id===muteRoleId))){
-    return 'moderation-and-audit';
+    return 'moderation';
   }
   return 'audit';
 }
