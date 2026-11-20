@@ -14,7 +14,7 @@ Opus System handles Discord moderation, support tickets, staff and developer per
 | --- | --- |
 | Team management | Staff and Development branches, promotions/demotions, position history, automatic consistency checks, restricted access roles |
 | Moderation | Warnings, mutes, bans, kicks, punishments, blacklists, role-aware authorization, punishment history |
-| Support | Nine ticket categories, Components V2 panel, staff claim/unclaim, per-user and per-role access, HTML transcripts |
+| Support | Nine ticket categories, compact two-embed panel, staff claim/unclaim, per-user and per-role access, HTML transcripts |
 | Account and onboarding | Verification, Linked / Unlinked account status, self-roles, signed account-link callback |
 | Auditing | Four separate destinations: guild configuration audit, moderation (including message activity and blacklist), AutoMod and ticket history |
 | Community | Invite attribution, boost notifications, welcome messages, user profiles, temporary voice channels |
@@ -83,7 +83,7 @@ Full permission rules, self-role restrictions, hierarchy checks, exceptions and 
 
 ## Ticket support
 
-The public ticket panel uses **Discord Components V2**. It displays Support, Reports, Appeals, Applications and Priority categories, live counts, a category selector, and **My Tickets / Ticket Status / Support Guide** buttons.
+The public ticket panel uses **two compact Discord embeds**, one for ticket activity and one listing nine categories on separate lines with code-formatted labels. No emoji or banner artwork appears in the panel. It retains the category selector and **My Tickets / Ticket Status / Support Guide** buttons.
 
 `/ticket add` and `/ticket remove` manage access either to the **current ticket** or to **all tickets** through an explicit scope selection. A direct user removal overrides ordinary role-based access; removing one role does **not** remove access granted by another role. **[Details](docs/TICKETS.md)**
 

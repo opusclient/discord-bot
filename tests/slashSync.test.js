@@ -100,7 +100,7 @@ test('startup sync changes only out-of-date guild commands and re-verifies', asy
   assert.equal(changes, 1);
 });
 
-test('ticket slash open displays the same Components V2 category panel', async () => {
+test('ticket slash open displays a clean embed category panel', async () => {
   const { execute } = commands.get('ticket');
   let reply = null;
   const interaction = {
@@ -110,11 +110,11 @@ test('ticket slash open displays the same Components V2 category panel', async (
     reply: async payload => { reply = payload; }
   };
   await execute(interaction, { user: { displayAvatarURL: () => null } });
-  assert.equal(reply.components.length, 1);
-  assert.ok(reply.flags & MessageFlags.IsComponentsV2);
+  assert.equal(reply.embeds.length, 2);
+  assert.equal(reply.components.length, 2);
+  assert.equal(reply.flags & MessageFlags.IsComponentsV2, 0);
   assert.equal(reply.flags & MessageFlags.Ephemeral, 0);
-  const rows = reply.components[0].toJSON().components.filter(item => item.type === 1);
-  assert.equal(rows.length, 2);
+  const rows = reply.components.map(item => item.toJSON());
   assert.equal(rows[0].components[0].options.length, 9);
   assert.deepEqual(rows[1].components.map(item => item.custom_id), [
     'ticket_panel_my', 'ticket_panel_status', 'ticket_panel_guide'

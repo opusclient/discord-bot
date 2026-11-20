@@ -10,30 +10,36 @@ process.env.DB_PATH = join(dir, 'tickets.sqlite');
 const { db, createTicketRow, getTicketStats, claimTicketRow, closeTicketRow, getOpenTicketByOwner, setInstallMessage, getInstallMessage } = await import('../src/db.js');
 const { buildTicketPanelPayload, buildTicketPanelActionPayload, buildTicketPurposeModal, refreshTicketPanelMessage, TICKET_TYPES, TICKET_PANEL_ACTIONS, TICKET_PANEL_MESSAGE_KEY, parseTicketModalType } = await import('../src/services/tickets.js');
 
-test('ticket panel uses one Components V2 container with all nine categories', () => {
+test('ticket panel uses two minimal embeds with nine clean code-formatted categories', () => {
   const payload = buildTicketPanelPayload('123456789012345678');
-  const components = payload.components.map(item => item.toJSON());
-  assert.equal(components.length, 1);
-  assert.equal(components[0].type, 17);
-  assert.equal(components[0].components.length, 10);
-  assert.equal(components[0].components.some(item => item.type === 9), false);
-  assert.equal(payload.flags, 32768);
-  const text = components[0].components.filter(item => item.type === 10)
-    .map(item => item.content).join('\n');
-  assert.match(text, /SUPPORT CENTER/);
-  assert.match(text, /How can we help/);
-  assert.match(text, /TICKET ACTIVITY/);
-  assert.match(text, /SUPPORT & ACCOUNTS/);
-  assert.match(text, /REPORTS & APPEALS/);
-  assert.match(text, /TEAM & PRIORITY/);
-  assert.match(text, /Create a ticket/);
-  const rows = components[0].components.filter(item => item.type === 1);
+  assert.equal(payload.embeds.length, 2);
+  assert.equal(payload.components.length, 2);
+  assert.equal(payload.flags, undefined);
+
+  const embeds = payload.embeds.map(item => item.toJSON());
+  assert.equal(embeds[0].title, 'Opus Client Support');
+  assert.equal(embeds[1].title, 'Ticket Categories');
+  assert.match(embeds[0].description, /`Open`/);
+  assert.match(embeds[0].description, /`Claimed`/);
+  assert.match(embeds[0].description, /`Closed`/);
+  const lines = embeds[1].description.split('\n').filter(line => line.includes(' — '));
+  assert.equal(lines.length, 9);
+  for (const type of Object.values(TICKET_TYPES)) {
+    assert.ok(lines.some(line => line.startsWith('`' + type.label + '`  —  ')));
+  }
+  const visible = embeds.map(embed => embed.title + '\n' + embed.description).join('\n');
+  assert.doesNotMatch(visible, /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u);
+  assert.ok(visible.length < 950);
+
+  const rows = payload.components.map(item => item.toJSON());
   assert.equal(rows.length, 2);
   const dropdown = rows[0].components[0];
   assert.equal(dropdown.custom_id, 'ticket_select_category');
   assert.equal(dropdown.options.length, 9);
   assert.deepEqual(dropdown.options.map(item => item.value), Object.keys(TICKET_TYPES));
+  assert.ok(dropdown.options.every(item => !item.emoji));
   assert.deepEqual(rows[1].components.map(item => item.custom_id), Object.values(TICKET_PANEL_ACTIONS));
+  assert.ok(rows[1].components.every(item => !item.emoji));
   assert.deepEqual(payload.allowedMentions, { parse: [] });
   assert.equal(parseTicketModalType('ticket_purpose_modal:priority'), 'priority');
   assert.equal(parseTicketModalType('ticket_purpose_modal:nonexistent'), null);
@@ -86,8 +92,9 @@ test('ticket panel refresh edits the existing message instead of reposting', asy
     author: { id: '123456789012345733' },
     edit: async payload => {
       edits++;
-      assert.equal(payload.components.length, 1);
-      assert.equal(payload.flags & 32768, 32768);
+      assert.equal(payload.embeds.length, 2);
+      assert.equal(payload.components.length, 2);
+      assert.equal(payload.flags, undefined);
       return message;
     }
   };
@@ -117,6 +124,71 @@ test('ticket panel refresh edits the existing message instead of reposting', asy
   } finally {
     originalConfig.guildId = saved;
     originalConfig.tickets.panelChannelId = panelId;
+  }
+});
+
+test('old Components V2 ticket panel is migrated once and then edited in place', async () => {
+  const guildId = '123456789012345740';
+  const channelId = '123456789012345741';
+  const oldId = '123456789012345742';
+  const newId = '123456789012345743';
+  const botId = '123456789012345744';
+  let sends = 0;
+  let deletes = 0;
+  let edits = 0;
+  const oldMessage = {
+    id: oldId,
+    author: { id: botId },
+    flags: { has: flag => flag === 32768 },
+    delete: async () => { deletes++; }
+  };
+  const replacement = {
+    id: newId,
+    author: { id: botId },
+    flags: { has: () => false },
+    edit: async payload => {
+      edits++;
+      assert.equal(payload.embeds.length, 2);
+      return replacement;
+    }
+  };
+  const channel = {
+    id: channelId,
+    isTextBased: () => true,
+    messages: { fetch: async id => id === oldId ? oldMessage : id === newId ? replacement : null },
+    send: async payload => {
+      assert.equal(payload.embeds.length, 2);
+      assert.equal(payload.components.length, 2);
+      sends++;
+      return replacement;
+    }
+  };
+  const client = {
+    user: { id: botId },
+    guilds: { cache: new Map([[guildId, {
+      id: guildId,
+      channels: { fetch: async id => id === channelId ? channel : null }
+    }]]) }
+  };
+  const savedGuild = (await import('../src/config.js')).config.guildId;
+  const savedChannel = (await import('../src/config.js')).config.tickets.panelChannelId;
+  const actual = (await import('../src/config.js')).config;
+  actual.guildId = guildId;
+  actual.tickets.panelChannelId = channelId;
+  setInstallMessage(guildId, TICKET_PANEL_MESSAGE_KEY, channelId, oldId);
+  try {
+    const migrated = await refreshTicketPanelMessage(client);
+    assert.equal(migrated.id, newId);
+    assert.equal(sends, 1);
+    assert.equal(deletes, 1);
+    assert.equal(getInstallMessage(guildId, TICKET_PANEL_MESSAGE_KEY).message_id, newId);
+    const refreshed = await refreshTicketPanelMessage(client);
+    assert.equal(refreshed.id, newId);
+    assert.equal(edits, 1);
+    assert.equal(sends, 1);
+  } finally {
+    actual.guildId = savedGuild;
+    actual.tickets.panelChannelId = savedChannel;
   }
 });
 

@@ -1,6 +1,6 @@
 # Support tickets
 
-Tickets are private Discord channels created by Opus System. The system uses a **single Components V2 support panel** with a category selector, status counters and three actions: **My Tickets**, **Ticket Status**, and **Support Guide**.
+Tickets are private Discord channels created by Opus System. The support panel contains **two minimal Discord embeds**: one for ticket activity and one for nine single-line categories with code-formatted names. It contains no decorative emoji, and retains a category selector plus three actions: **My Tickets**, **Ticket Status**, and **Support Guide**.
 
 ## Categories
 

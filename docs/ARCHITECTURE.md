@@ -85,7 +85,7 @@ The policy operates using **configured role IDs**, not arbitrary role color, nam
 ## Ticket lifecycle
 
 ```text
-Components V2 panel
+Two-embed support panel
     ├── Category select → Purpose modal → Ticket created
     ├── My Tickets / Status / Guide buttons
     └── /ticket add, remove, rename, close

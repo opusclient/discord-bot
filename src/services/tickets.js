@@ -233,16 +233,48 @@ const ticketPanelDivider = () => new SeparatorBuilder()
 
 export function buildTicketPanelPayload(guildId = config.guildId) {
   const stats = getTicketStats(guildId);
+  const overview = baseEmbed(0x8070D9)
+    .setTitle('Opus Client Support')
+    .setDescription([
+      'Select the category that best describes your request.',
+      '',
+      '**Ticket activity**',
+      '`Open` **' + stats.open + '**  ·  `Claimed` **' +
+        stats.claimed + '**  ·  `Closed` **' + stats.closed + '**'
+    ].join('\n'));
+
+  const descriptions = {
+    priority: 'Urgent support requests',
+    general: 'General questions and help',
+    technical: 'Launcher and client issues',
+    bugs: 'Report a reproducible bug',
+    appeal: 'Review a moderation decision',
+    account: 'Sign-in and account linking',
+    application: 'Apply to join the team',
+    purchases: 'Billing and purchase support',
+    security: 'Report a security concern'
+  };
+  const categoryLines = Object.values(TICKET_TYPES).map(type =>
+    '`' + type.label + '`  —  ' + descriptions[type.key]
+  );
+  const categories = baseEmbed(0x586076)
+    .setTitle('Ticket Categories')
+    .setDescription([
+      ...categoryLines,
+      '',
+      '*Choose a category below to open a private ticket.*'
+    ].join('\n'));
+
   const dropdown = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
       .setCustomId(TICKET_SELECT_ID)
-      .setPlaceholder('Choose a ticket category')
+      .setPlaceholder('Select a ticket category')
       .setMinValues(1)
       .setMaxValues(1)
       .addOptions(Object.values(TICKET_TYPES).map(type => ({
         label: type.label,
         value: type.key,
-        description: type.description.slice(0, 100)
+        description: descriptions[type.key]
       })))
   );
   const actions = new ActionRowBuilder().addComponents(
@@ -259,45 +291,10 @@ export function buildTicketPanelPayload(guildId = config.guildId) {
       .setLabel('Support Guide')
       .setStyle(ButtonStyle.Secondary)
   );
-  const panel = new ContainerBuilder()
-    .setAccentColor(0x8070D9)
-    .addTextDisplayComponents(ticketPanelText([
-      '-# OPUS CLIENT  /  SUPPORT CENTER',
-      '## How can we help?',
-      'Open a private request and connect with the appropriate team.'
-    ].join('\n')))
-    .addSeparatorComponents(ticketPanelDivider())
-    .addTextDisplayComponents(ticketPanelText([
-      '-# TICKET ACTIVITY',
-      '**' + stats.open + '**  Open     ·     **' + stats.claimed +
-        '**  Claimed     ·     **' + stats.closed + '**  Closed'
-    ].join('\n')))
-    .addSeparatorComponents(ticketPanelDivider())
-    .addTextDisplayComponents(
-      ticketPanelText([
-        '**SUPPORT & ACCOUNTS**',
-        '**General** · Questions and support   ·   **Technical** · Client and launcher',
-        '**Account & Linking** · Login and access   ·   **Purchases** · Billing'
-      ].join('\n')),
-      ticketPanelText([
-        '**REPORTS & APPEALS**',
-        '**Bug Report** · Bugs and reproduction   ·   **Security** · Private reports',
-        '**Appeals** · Moderation decisions'
-      ].join('\n')),
-      ticketPanelText([
-        '**TEAM & PRIORITY**',
-        '**Staff Application** · Join the Opus team   ·   **Priority** · Urgent assistance'
-      ].join('\n'))
-    )
-    .addTextDisplayComponents(ticketPanelText([
-      '### Create a ticket',
-      'Select a category, then describe your request in the form.',
-      '-# Only you and authorized ticket staff can see your ticket. Never share passwords or recovery codes.'
-    ].join('\n')))
-    .addActionRowComponents(dropdown, actions);
+
   return {
-    components: [panel],
-    flags: MessageFlags.IsComponentsV2,
+    embeds: [overview, categories],
+    components: [dropdown, actions],
     allowedMentions: { parse: [] }
   };
 }
@@ -370,13 +367,38 @@ export async function refreshTicketPanelMessage(client) {
   if (stored?.message_id) {
     const message = await channel.messages.fetch(stored.message_id).catch(() => null);
     if (message && message.author.id === client.user.id) {
-      try {
-        await message.edit(payload);
-        return message;
-      } catch (error) {
-        console.error('[tickets] Could not edit the existing panel:', error.message);
-        return null;
+      const v2 = message.flags?.has?.(MessageFlags.IsComponentsV2) ??
+        Boolean(Number(message.flags?.bitfield ?? message.flags ?? 0) & MessageFlags.IsComponentsV2);
+      if (!v2) {
+        try {
+          await message.edit(payload);
+          return message;
+        } catch (error) {
+          console.error('[tickets] Could not edit the existing panel:', error.message);
+          return null;
+        }
       }
+
+      const replacement = await channel.send(payload);
+      setInstallMessage(guild.id, TICKET_PANEL_MESSAGE_KEY, channel.id, replacement.id);
+      try {
+        await message.delete();
+      } catch (error) {
+        console.warn('[tickets] Could not remove the outdated panel:', error.message);
+        try {
+          await message.edit({
+            components: [new ContainerBuilder()
+              .addTextDisplayComponents(ticketPanelText(
+                '**Support panel updated**\nUse the current support panel: ' +
+                  'https://discord.com/channels/' + guild.id + '/' + channel.id + '/' + replacement.id
+              ))],
+            allowedMentions: { parse: [] }
+          });
+        } catch (editError) {
+          console.warn('[tickets] Could not disable the outdated panel:', editError.message);
+        }
+      }
+      return replacement;
     }
   }
 
