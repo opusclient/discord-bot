@@ -1150,3 +1150,31 @@ dialog::backdrop {
     max-height: min(220px, 35vh);
   }
 }
+
+.validation-alert {
+  margin: 0 0 23px;
+  padding: 16px 18px;
+  border: 1px solid #aa5550;
+  border-left: 4px solid #ed7368;
+  border-radius: 6px;
+  background: #30201f;
+  color: #ffe0dc;
+}
+.validation-alert strong { font-size: 14px; font-weight: 700; }
+.validation-alert p { margin: 7px 0 0; color: #f4beb7; font-size: 13px; line-height: 1.5; }
+.field-error { margin: 5px 0 0; color: #f4a9a0; font-size: 12px; line-height: 1.5; font-weight: 550; }
+.select-trigger[aria-invalid="true"], textarea[aria-invalid="true"], input[aria-invalid="true"] {
+  border: 2px solid #ed7368;
+  background-color: #261918;
+}
+.editor-shell:has(textarea[aria-invalid="true"]) { border-color: #ed7368; }
+.publish-error:not(:empty) {
+  padding: 13px 15px;
+  border: 1px solid #aa5550;
+  border-left: 4px solid #ed7368;
+  border-radius: 5px;
+  background: #30201f;
+  color: #ffe0dc;
+  font-size: 13px;
+  line-height: 1.5;
+}

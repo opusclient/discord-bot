@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const source = readFileSync(new URL('../web/dictate/editor.js', import.meta.url), 'utf8')
   .replace('  void init();', `  globalThis.__probe = {
     setData(value) { data = value; },
-    openPicker, snapshotSelection, insertToken
+    openPicker, snapshotSelection, insertToken, showReview
   };`);
 
 function createEditor() {
@@ -171,4 +171,32 @@ test('format toggle changes message type without a native dropdown', () => {
   assert.equal(editor.el('format').value, 'embed');
   editor.el('format-text').click();
   assert.equal(editor.el('format').value, 'text');
+});
+
+test('missing destination is shown prominently and opens the channel chooser', () => {
+  const editor = createEditor();
+  editor.el('destination').value = '';
+  editor.el('content').value = 'Ready to send';
+  editor.showReview();
+  assert.equal(editor.el('validation-alert').hidden, false);
+  assert.match(editor.el('validation-message').textContent, /destination channel/i);
+  assert.equal(editor.el('destination-error').hidden, false);
+  assert.equal(editor.el('destination-menu').hidden, false);
+  assert.equal(editor.document.activeElement, editor.el('destination-search'));
+  editor.el('destination-options').children[0].click();
+  assert.equal(editor.el('validation-alert').hidden, true);
+  assert.equal(editor.el('destination-error').hidden, true);
+});
+
+test('empty message highlights content and clears after editing', () => {
+  const editor = createEditor();
+  editor.el('content').value = '';
+  editor.showReview();
+  assert.equal(editor.el('validation-alert').hidden, false);
+  assert.match(editor.el('validation-message').textContent, /write a message/i);
+  assert.equal(editor.el('content-error').hidden, false);
+  assert.equal(editor.document.activeElement, editor.el('content'));
+  editor.el('content').value = 'Hello';
+  editor.el('content').dispatchEvent({ type: 'input' });
+  assert.equal(editor.el('validation-alert').hidden, true);
 });

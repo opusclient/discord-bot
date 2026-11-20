@@ -10,6 +10,10 @@
         <span class="expires" id="expires">Private session</span>
       </div>
 
+      <div id="validation-alert" class="validation-alert" role="alert" aria-live="assertive" hidden>
+        <strong>Cannot publish this message</strong>
+        <p id="validation-message"></p>
+      </div>
       <div class="form-grid">
         <div class="control">
           <span class="field-name">Destination channel</span>
@@ -23,6 +27,7 @@
               <div id="destination-options" class="select-options" role="listbox" aria-label="Destination channels"></div>
             </div>
           </div>
+          <p id="destination-error" class="field-error" hidden></p>
         </div>
         <div class="control">
           <span class="field-name">Message format</span>
@@ -38,6 +43,7 @@
         <label class="control">
           <span class="field-name">Embed title <span class="muted">Optional</span></span>
           <input id="title" type="text" maxlength="256" placeholder="Announcement title" autocomplete="off">
+          <p id="title-error" class="field-error" hidden></p>
         </label>
         <label class="control color-control">
           <span class="field-name">Embed accent</span>
@@ -45,6 +51,7 @@
             <input id="color-picker" type="color" value="#f36b35" aria-label="Embed accent color">
             <input id="color" type="text" maxlength="7" value="#F36B35" aria-label="Hex color code">
           </div>
+          <p id="color-error" class="field-error" hidden></p>
         </label>
       </div>
 
@@ -86,6 +93,7 @@
         </div>
       </div>
 
+      <p id="content-error" class="field-error" hidden></p>
       <div class="actions">
         <span class="draft-status" id="draft-status">Private draft · Token access only</span>
         <button id="publish" class="primary" type="button">Review &amp; publish <span class="action-arrow" aria-hidden="true">→</span></button>

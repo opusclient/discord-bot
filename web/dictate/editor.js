@@ -9,6 +9,9 @@
     destinationValue: $('destination-value'), destinationMenu: $('destination-menu'),
     destinationSearch: $('destination-search'), destinationOptions: $('destination-options'),
     formatEmbed: $('format-embed'), formatText: $('format-text'),
+    validationAlert: $('validation-alert'), validationMessage: $('validation-message'),
+    destinationError: $('destination-error'), contentError: $('content-error'),
+    colorError: $('color-error'), titleError: $('title-error'),
     format: $('format'), formatOptions: $('format-options'), title: $('title'),
     color: $('color'), colorPicker: $('color-picker'), content: $('content'),
     counter: $('counter'), preview: $('preview-message'),
@@ -388,20 +391,56 @@
 
   function validate() {
     const value = draft();
-    if (!value.channelId) return 'Choose a destination channel.';
-    if (!value.content.trim()) return 'Write a message before publishing.';
-    if (value.content.length > (value.format === 'embed' ? 4000 : 2000)) return 'Message exceeds the Discord length limit.';
-    if (value.format === 'embed' && !/^#[\da-fA-F]{6}$/.test(value.color)) return 'Enter a valid six-digit hex color.';
-    if (value.title.length > 256) return 'Embed title exceeds 256 characters.';
-    return '';
+    if (!value.channelId) return { field: 'destination', message: 'Choose a destination channel before publishing.' };
+    if (!value.content.trim()) return { field: 'content', message: 'Write a message before publishing.' };
+    if (value.content.length > (value.format === 'embed' ? 4000 : 2000)) return { field: 'content', message: 'Message exceeds the Discord length limit.' };
+    if (value.format === 'embed' && !/^#[\da-fA-F]{6}$/.test(value.color)) return { field: 'color', message: 'Enter a valid six-digit hex color.' };
+    if (value.title.length > 256) return { field: 'title', message: 'Embed title exceeds 256 characters.' };
+    return null;
+  }
+
+  function clearValidation() {
+    el.validationAlert.hidden = true;
+    el.validationMessage.textContent = '';
+    for (const field of ['destination', 'content', 'color', 'title']) {
+      const control = field === 'destination' ? el.destinationTrigger : el[field];
+      control.setAttribute('aria-invalid', 'false');
+      const inline = el[field + 'Error'];
+      inline.hidden = true;
+      inline.textContent = '';
+    }
+  }
+
+  function showValidation(error) {
+    clearValidation();
+    el.validationAlert.hidden = false;
+    el.validationMessage.textContent = error.message;
+    const control = error.field === 'destination' ? el.destinationTrigger : el[error.field];
+    const inline = el[error.field + 'Error'];
+    inline.textContent = error.message;
+    inline.hidden = false;
+    control.setAttribute('aria-invalid', 'true');
+    control.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    if (error.field === 'destination') {
+      if (el.destinationMenu.hidden) toggleDestination();
+    } else {
+      control.focus();
+    }
+  }
+
+  function updateValidation() {
+    if (el.validationAlert.hidden) return;
+    const error = validate();
+    if (!error || el[error.field + 'Error'].hidden) clearValidation();
   }
 
   function showReview() {
     const error = validate();
     if (error) {
-      el.draftStatus.textContent = error;
+      showValidation(error);
       return;
     }
+    clearValidation();
     const target = data.channelOptions.find(item => item.id === el.destination.value);
     el.confirmText.textContent =
       'Destination: #' + target.label + '. Publish as Opus System? ' +
@@ -443,6 +482,7 @@
       el.status.textContent = 'Published';
     } catch (error) {
       el.publishError.textContent = error.message;
+      el.publishError.scrollIntoView?.({ block: 'nearest' });
     } finally {
       publishing = false;
       el.confirmPublish.disabled = false;
@@ -473,6 +513,7 @@
     const eventName = ['content', 'color', 'title'].includes(id) ? 'input' : 'change';
     $(id).addEventListener(eventName, refresh);
     $(id).addEventListener(eventName, queueSave);
+    $(id).addEventListener(eventName, updateValidation);
   }
   el.destinationTrigger.addEventListener('click', toggleDestination);
   el.destinationSearch.addEventListener('input', drawDestinations);
