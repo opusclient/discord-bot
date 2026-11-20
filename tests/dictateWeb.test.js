@@ -38,7 +38,8 @@ const other = {
 const bot = { id: botId };
 const permitted = { has: flag => [
   PermissionsBitField.Flags.ViewChannel,
-  PermissionsBitField.Flags.SendMessages
+  PermissionsBitField.Flags.SendMessages,
+  PermissionsBitField.Flags.AttachFiles
 ].includes(flag) };
 const target = {
   id: destinationId, name: 'announcements', rawPosition: 0,
@@ -300,4 +301,90 @@ test.after(async () => {
   await new Promise(resolve => server.close(resolve));
   if (previousUrl === undefined) delete process.env.DICTATE_EDITOR_PUBLIC_URL;
   else process.env.DICTATE_EDITOR_PUBLIC_URL = previousUrl;
+});
+
+
+test('private image uploads create a single embed image and cannot leak between tokens', async () => {
+  revoked = false;
+  const token = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const foreignToken = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j1wAAAABJRU5ErkJggg==', 'base64');
+  const uploaded = await fetch(url + '/dictate/api/image', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, Origin: url, 'Content-Type': 'image/png' },
+    body: png
+  });
+  assert.equal(uploaded.status, 201, JSON.stringify(await uploaded.clone().json()));
+  const image = await uploaded.json();
+  assert.match(image.id, /^[0-9a-f]{24}$/);
+  assert.equal(image.type, 'image/png');
+
+  const withoutToken = await fetch(url + '/dictate/api/image?id=' + image.id);
+  assert.equal(withoutToken.status, 401);
+  const foreign = await fetch(url + '/dictate/api/image?id=' + image.id, {
+    headers: { Authorization: 'Bearer ' + foreignToken }
+  });
+  assert.equal(foreign.status, 404);
+  const owned = await fetch(url + '/dictate/api/image?id=' + image.id, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  assert.equal(owned.status, 200);
+  assert.deepEqual(Buffer.from(await owned.arrayBuffer()), png);
+
+  const saved = await api(token, 'PUT', 'draft', {
+    channelId: destinationId, format: 'embed', title: 'Server Guide',
+    color: '#F36B35', content: 'Welcome!', images: [image.id], version: 0
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.json));
+  const result = await api(token, 'POST', 'publish', { version: saved.json.version });
+  assert.equal(result.status, 200);
+  const payload = sent.at(-1);
+  assert.equal(payload.files.length, 1);
+  assert.match(payload.embeds[0].data.image.url, /^attachment:\/\/dictate-/);
+  assert.equal(payload.embeds[0].data.title, 'Server Guide');
+  assert.deepEqual(payload.files[0].attachment, png);
+});
+
+test('plain text allows multiple images and rejects invalid or cross-session attachments', async () => {
+  revoked = false;
+  const token = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const otherToken = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j1wAAAABJRU5ErkJggg==', 'base64');
+  const ids = [];
+  for (let i = 0; i < 2; i++) {
+    const response = await fetch(url + '/dictate/api/image', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, Origin: url, 'Content-Type': 'image/png' },
+      body: png
+    });
+    assert.equal(response.status, 201, JSON.stringify(await response.clone().json()));
+    ids.push((await response.json()).id);
+  }
+  const invalid = await fetch(url + '/dictate/api/image', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, Origin: url, 'Content-Type': 'image/png' },
+    body: Buffer.from('this is not an image')
+  });
+  assert.equal(invalid.status, 400);
+  const embedTooMany = await api(token, 'PUT', 'draft', {
+    channelId: destinationId, format: 'embed', title: '', color: '#F36B35',
+    content: 'Two images', images: ids, version: 0
+  });
+  assert.equal(embedTooMany.status, 400);
+  const crossSession = await api(otherToken, 'PUT', 'draft', {
+    channelId: destinationId, format: 'text', title: '', color: '#F36B35',
+    content: 'Other', images: ids, version: 0
+  });
+  assert.equal(crossSession.status, 400);
+  const saved = await api(token, 'PUT', 'draft', {
+    channelId: destinationId, format: 'text', title: '', color: '#F36B35',
+    content: '', images: ids, version: 0
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.json));
+  const result = await api(token, 'POST', 'publish', { version: saved.json.version });
+  assert.equal(result.status, 200);
+  const payload = sent.at(-1);
+  assert.equal(payload.content, null);
+  assert.equal(payload.files.length, 2);
+  assert.equal(payload.embeds, undefined);
 });

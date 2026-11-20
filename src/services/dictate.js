@@ -189,7 +189,8 @@ export function appendDictateReferences(draft, selectedMentions, selectedChannel
 export function validateDictateDraft(draft) {
   if (!/^\d{16,23}$/.test(draft?.channelId || '')) return 'Choose a valid destination channel.';
   if (!['embed', 'text'].includes(draft?.format)) return 'Choose Embed or Markdown text.';
-  if (typeof draft?.content !== 'string' || !draft.content.trim()) return 'The message cannot be empty.';
+  if (typeof draft?.content !== 'string') return 'Invalid message content.';
+  if (!draft.content.trim() && !draft.images?.length) return 'Add a message or at least one image.';
   if (draft.format === 'text' && draft.content.length > 2000) return 'Markdown text is limited to 2,000 characters.';
   if (draft.format === 'embed' && draft.content.length > 4000) return 'Embed content is limited to 4,000 characters.';
   if (draft.title && draft.title.length > 256) return 'The embed title cannot exceed 256 characters.';
@@ -204,11 +205,11 @@ export function buildDictateMessage(draft) {
   const roles = [...new Set([...draft.content.matchAll(/<@&(\d{16,23})>/g)].map(match => match[1]))].filter(id => id !== config.guildId).slice(0, 100);
   const allowedMentions = { parse: [], users, roles, repliedUser: false };
   if (draft.format === 'text') {
-    return { content: draft.content, allowedMentions };
+    return { content: draft.content || null, allowedMentions };
   }
   const embed = new EmbedBuilder()
-    .setDescription(draft.content)
     .setColor(draft.color ? Number.parseInt(draft.color.slice(1), 16) : 0x5865F2);
+  if (draft.content.trim()) embed.setDescription(draft.content);
   if (draft.title?.trim()) embed.setTitle(draft.title.trim());
   return { content: null, embeds: [embed], allowedMentions };
 }

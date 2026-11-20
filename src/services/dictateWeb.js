@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  ChannelType, EmbedBuilder, PermissionsBitField
+  AttachmentBuilder, ChannelType, EmbedBuilder, PermissionsBitField
 } from 'discord.js';
 import { config } from '../config.js';
 import {
@@ -14,6 +14,9 @@ import {
 import { sendAuditLog } from './auditlog.js';
 
 const ttl = 15 * 60 * 1000;
+const maxImageBytes = 8 * 1024 * 1024;
+const maxSessionBytes = 24 * 1024 * 1024;
+const maxTextImages = 10;
 const sessions = new Map();
 const root = fileURLToPath(new URL('../../web/dictate/', import.meta.url));
 const assets = new Map([
@@ -55,10 +58,13 @@ export function createDictateWebSession(interaction) {
   }
   const token = randomBytes(32).toString('base64url');
   const hash = createHash('sha256').update(token).digest('hex');
+  const timer = setTimeout(() => sessions.delete(hash), ttl + 1000);
+  timer.unref();
   sessions.set(hash, {
     guildId: interaction.guildId, userId: interaction.user.id,
     issuedAt: Date.now(), expiresAt: Date.now() + ttl, state: 'active',
-    draft: { channelId: '', format: 'embed', title: '', color: '#F36B35', content: '' },
+    draft: { channelId: '', format: 'embed', title: '', color: '#F36B35', content: '', images: [] },
+    uploads: new Map(), uploadedBytes: 0,
     version: 0
   });
   return { url: baseUrl + '/dictate/#token=' + encodeURIComponent(token), expiresAt: Date.now() + ttl };
@@ -100,6 +106,31 @@ async function readBody(req) {
   }
 }
 
+async function readImage(req) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of req) {
+    total += chunk.length;
+    if (total > maxImageBytes) throw new Error('Image exceeds 8 MB');
+    chunks.push(chunk);
+  }
+  const buffer = Buffer.concat(chunks);
+  let type;
+  let extension;
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) {
+    type = 'image/png'; extension = 'png';
+  } else if (buffer.length >= 3 && buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) {
+    type = 'image/jpeg'; extension = 'jpg';
+  } else if (buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) {
+    type = 'image/gif'; extension = 'gif';
+  } else if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP') {
+    type = 'image/webp'; extension = 'webp';
+  }
+  if (!type) throw new Error('Only PNG, JPG, GIF and WebP images are supported');
+  return { buffer, type, extension };
+}
+
 function normalizeDraft(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Invalid draft');
@@ -109,6 +140,12 @@ function normalizeDraft(value) {
     throw new Error('Invalid draft fields');
   }
   const draft = Object.fromEntries(fields.map(field => [field, value[field]]));
+  draft.images = value.images ?? [];
+  if (!Array.isArray(draft.images) || draft.images.some(id => typeof id !== 'string' || !/^[0-9a-f]{24}$/.test(id)) ||
+    new Set(draft.images).size !== draft.images.length || draft.images.length > maxTextImages ||
+    (draft.format === 'embed' && draft.images.length > 1)) {
+    throw new Error('Embed supports one image; plain text supports up to ten images');
+  }
   if (draft.channelId && !/^\d{16,23}$/.test(draft.channelId)) {
     throw new Error('Invalid destination channel');
   }
@@ -181,7 +218,8 @@ async function publish(client, session, data) {
     format: data.format,
     content: data.content,
     title: data.title,
-    color: data.color
+    color: data.color,
+    images: data.images
   };
   const invalid = validateDictateDraft(draft);
   if (invalid) throw new Error(invalid);
@@ -195,6 +233,15 @@ async function publish(client, session, data) {
     throw new Error('Destination permission has changed');
   }
   const output = buildDictateMessage(draft);
+  if (draft.images.length && !target.permissionsFor(bot)?.has(PermissionsBitField.Flags.AttachFiles)) {
+    throw new Error('Opus System needs Attach Files permission in the destination channel');
+  }
+  const uploads = draft.images.map(id => session.uploads.get(id));
+  if (uploads.some(item => !item)) throw new Error('One or more uploaded images are unavailable');
+  if (uploads.length) {
+    output.files = uploads.map(item => new AttachmentBuilder(item.buffer, { name: item.filename }));
+    if (draft.format === 'embed') output.embeds[0].setImage('attachment://' + uploads[0].filename);
+  }
   for (const roleId of output.allowedMentions.roles) {
     const role = guild.roles.cache.get(roleId);
     if (!role || !roles.some(item => item.id === roleId)) {
@@ -222,6 +269,8 @@ async function publish(client, session, data) {
     throw new Error('Discord rejected the message: ' + error.message);
   }
   session.state = 'published';
+  session.uploads.clear();
+  session.uploadedBytes = 0;
   const audit = new EmbedBuilder().setColor(0x5865F2)
     .setTitle('Dictate Published')
     .addFields(
@@ -242,8 +291,9 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     res.setHeader('Content-Security-Policy',
       "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; " +
-      "img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
-    const pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname;
+      "img-src 'self' blob:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+    const requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+    const pathname = requestUrl.pathname;
     if (req.method === 'GET' && assets.has(pathname)) {
       const [name, contentType] = assets.get(pathname);
       const text = await readFile(path.join(root, name)).catch(() => null);
@@ -256,7 +306,7 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
       return res.end(text);
     }
     if (!['/dictate/api/session', '/dictate/api/editor', '/dictate/api/draft',
-      '/dictate/api/publish'].includes(pathname)) {
+      '/dictate/api/image', '/dictate/api/publish'].includes(pathname)) {
       return write(res, 404, { error: 'Not found' });
     }
     if (requireOrigin) {
@@ -267,7 +317,7 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
       if (req.headers.origin && req.headers.origin !== requireOrigin) {
         return write(res, 403, { error: 'Invalid origin' });
       }
-      if (['POST', 'PUT'].includes(req.method) && req.headers.origin !== requireOrigin) {
+      if (['POST', 'PUT', 'DELETE'].includes(req.method) && req.headers.origin !== requireOrigin) {
         return write(res, 403, { error: 'Origin is required' });
       }
     }
@@ -287,6 +337,45 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
         return write(res, 403, { error: error.message });
       }
     }
+    if (pathname.endsWith('/image') && req.method === 'POST') {
+      try {
+        await editorContext(client, session);
+        if (session.uploads.size >= 20) return write(res, 400, { error: 'Too many images uploaded in this session' });
+        if (Number(req.headers['content-length'] ?? 0) > maxImageBytes) {
+          return write(res, 413, { error: 'Each image must be 8 MB or less' });
+        }
+        const image = await readImage(req);
+        if (session.uploadedBytes + image.buffer.length > maxSessionBytes) {
+          return write(res, 413, { error: 'Images cannot exceed 24 MB in total' });
+        }
+        if (session.state !== 'active') return write(res, 409, { error: 'Session no longer active' });
+        const id = randomBytes(12).toString('hex');
+        const filename = 'dictate-' + id + '.' + image.extension;
+        session.uploads.set(id, { ...image, filename, id, size: image.buffer.length });
+        session.uploadedBytes += image.buffer.length;
+        return write(res, 201, { id, filename, type: image.type, size: image.buffer.length });
+      } catch (error) {
+        return write(res, 400, { error: error.message });
+      }
+    }
+    if (pathname.endsWith('/image') && req.method === 'GET') {
+      try {
+        await editorContext(client, session);
+        const id = requestUrl.searchParams.get('id');
+        const item = session.uploads.get(id);
+        if (!item) return write(res, 404, { error: 'Image not found for this session' });
+        res.writeHead(200, {
+          'Content-Type': item.type,
+          'Content-Length': item.buffer.length,
+          'Content-Disposition': 'inline; filename="' + item.filename + '"',
+          'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff'
+        });
+        return res.end(item.buffer);
+      } catch (error) {
+        return write(res, 403, { error: error.message });
+      }
+    }
     if (pathname.endsWith('/draft') && req.method === 'PUT') {
       if (!String(req.headers['content-type'] ?? '').startsWith('application/json')) {
         return write(res, 415, { error: 'JSON required' });
@@ -297,7 +386,11 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
         if (!Number.isSafeInteger(data?.version) || data.version !== session.version) {
           return write(res, 409, { error: 'This draft was changed in another editor window' });
         }
-        session.draft = normalizeDraft(data);
+        const draft = normalizeDraft(data);
+        if (draft.images.some(id => !session.uploads.has(id))) {
+          return write(res, 400, { error: 'Image does not belong to this private session' });
+        }
+        session.draft = draft;
         session.version += 1;
         return write(res, 200, { version: session.version, savedAt: Date.now() });
       } catch (error) {
@@ -313,7 +406,11 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
           channelOptions: context.channels, mentionChannelOptions: context.mentionChannels,
           roleOptions: context.roles, userOptions: context.users,
           userName: context.actor.displayName,
-          draft: session.draft, version: session.version
+          draft: session.draft, version: session.version,
+          images: session.draft.images.map(id => {
+            const item = session.uploads.get(id);
+            return item ? { id, filename: item.filename, size: item.size, type: item.type } : null;
+          }).filter(Boolean)
         });
       } catch (error) {
         return write(res, 403, { error: error.message });

@@ -94,6 +94,20 @@
       </div>
 
       <p id="content-error" class="field-error" hidden></p>
+
+      <div class="image-section">
+        <div class="image-heading">
+          <span class="field-name">Images</span>
+          <span id="image-limit" class="muted">Embed · 1 image</span>
+        </div>
+        <div id="image-drop" class="image-upload">
+          <button id="image-add" class="secondary" type="button">Add image</button>
+          <span id="image-hint">PNG, JPG, GIF or WebP · 8 MB per image</span>
+          <input id="image-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+        </div>
+        <div id="image-list" class="image-list"></div>
+        <p id="images-error" class="field-error" hidden></p>
+      </div>
       <div class="actions">
         <span class="draft-status" id="draft-status">Private draft · Token access only</span>
         <button id="publish" class="primary" type="button">Review &amp; publish <span class="action-arrow" aria-hidden="true">→</span></button>

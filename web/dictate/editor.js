@@ -11,7 +11,9 @@
     formatEmbed: $('format-embed'), formatText: $('format-text'),
     validationAlert: $('validation-alert'), validationMessage: $('validation-message'),
     destinationError: $('destination-error'), contentError: $('content-error'),
-    colorError: $('color-error'), titleError: $('title-error'),
+    colorError: $('color-error'), titleError: $('title-error'), imagesError: $('images-error'),
+    imageAdd: $('image-add'), imageInput: $('image-input'), imageList: $('image-list'),
+    imageDrop: $('image-drop'), imageHint: $('image-hint'), imageLimit: $('image-limit'),
     format: $('format'), formatOptions: $('format-options'), title: $('title'),
     color: $('color'), colorPicker: $('color-picker'), content: $('content'),
     counter: $('counter'), preview: $('preview-message'),
@@ -35,6 +37,8 @@
   let saveTimer = null;
   let savePromise = Promise.resolve();
   let destinationHighlight = 0;
+  let images = [];
+  let imageBusy = false;
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, c => ({
@@ -88,7 +92,8 @@
       format: el.format.value,
       title: el.title.value,
       color: el.color.value,
-      content: el.content.value
+      content: el.content.value,
+      images: images.map(item => item.id)
     };
   }
 
@@ -171,7 +176,12 @@
     el.counter.textContent = value.length + ' / ' + max;
     el.counter.classList.toggle('over', value.length > max);
     el.formatOptions.hidden = el.format.value !== 'embed';
-    if (!value.trim() && !el.title.value.trim()) {
+    el.imageLimit.textContent = el.format.value === 'embed' ? 'Embed · 1 image' : 'Text · up to 10 images';
+    el.imageInput.multiple = el.format.value === 'text';
+    el.imageAdd.textContent = imageBusy ? 'Uploading…' : el.format.value === 'embed' ? 'Add image' : 'Add images';
+    el.imageAdd.disabled = imageBusy || images.length >= (el.format.value === 'embed' ? 1 : 10);
+    drawImages();
+    if (!value.trim() && !el.title.value.trim() && !images.length) {
       el.preview.className = 'preview-message empty';
       el.preview.textContent = 'Your message will appear here as you write.';
       return;
@@ -187,6 +197,20 @@
       el.preview.querySelector('.embed-preview').style.borderLeftColor = color;
     } else {
       el.preview.innerHTML = body;
+    }
+    const parent = el.format.value === 'embed'
+      ? el.preview.querySelector('.embed-preview') : el.preview;
+    if (images.length) {
+      const gallery = document.createElement('div');
+      gallery.className = el.format.value === 'embed' ? 'embed-image-gallery' : 'text-image-gallery';
+      for (const item of images.slice(0, el.format.value === 'embed' ? 1 : 10)) {
+        const photo = document.createElement('img');
+        photo.className = 'message-image';
+        photo.alt = 'Attached image';
+        if (item.preview) photo.src = item.preview;
+        gallery.append(photo);
+      }
+      parent.append(gallery);
     }
   }
 
@@ -314,6 +338,98 @@
     return result;
   }
 
+  function drawImages() {
+    el.imageList.replaceChildren();
+    for (const item of images) {
+      const card = document.createElement('div');
+      card.className = 'image-item';
+      const thumb = document.createElement('img');
+      thumb.alt = '';
+      if (item.preview) thumb.src = item.preview;
+      const details = document.createElement('div');
+      details.className = 'image-item-details';
+      const name = document.createElement('strong');
+      name.textContent = item.name ?? item.filename;
+      const size = document.createElement('span');
+      size.textContent = Math.ceil(item.size / 1024) + ' KB';
+      details.append(name, size);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'image-remove';
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', 'Remove ' + (item.name ?? item.filename));
+      remove.addEventListener('click', () => {
+        images = images.filter(image => image.id !== item.id);
+        if (item.preview) URL.revokeObjectURL(item.preview);
+        refresh();
+        queueSave();
+        updateValidation();
+      });
+      card.append(thumb, details, remove);
+      el.imageList.append(card);
+    }
+  }
+
+  async function addImages(files) {
+    if (imageBusy || !data || !files.length) return;
+    const limit = el.format.value === 'embed' ? 1 : 10;
+    if (images.length + files.length > limit) {
+      showValidation({ field: 'images', message: el.format.value === 'embed'
+        ? 'An embed can contain only one image. Remove the current image to replace it.'
+        : 'Plain text supports up to 10 images per message.' });
+      return;
+    }
+    imageBusy = true;
+    refresh();
+    el.imageHint.textContent = 'Uploading securely…';
+    try {
+      await persistDraft();
+      for (const file of files) {
+        if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
+          throw new Error('Only PNG, JPG, GIF and WebP images are supported.');
+        }
+        if (file.size > 8 * 1024 * 1024) throw new Error('Each image must be 8 MB or less.');
+        const response = await fetch('/dictate/api/image', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token, 'Content-Type': file.type },
+          body: file, cache: 'no-store', credentials: 'omit'
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Image upload failed');
+        images.push({ ...result, name: file.name, preview: URL.createObjectURL(file) });
+        dirty = true;
+        refresh();
+        await persistDraft();
+      }
+      clearValidation();
+    } catch (error) {
+      showValidation({ field: 'images', message: error.message });
+    } finally {
+      imageBusy = false;
+      el.imageHint.textContent = 'PNG, JPG, GIF or WebP · 8 MB per image';
+      refresh();
+    }
+  }
+
+  async function restoreImages() {
+    const restored = data.images ?? [];
+    images = restored.map(item => ({ ...item, name: item.filename, preview: null }));
+    refresh();
+    await Promise.all(images.map(async item => {
+      try {
+        const response = await fetch('/dictate/api/image?id=' + encodeURIComponent(item.id), {
+          headers: { Authorization: 'Bearer ' + token },
+          cache: 'no-store', credentials: 'omit'
+        });
+        if (!response.ok) throw new Error('Image unavailable');
+        item.preview = URL.createObjectURL(await response.blob());
+        refresh();
+      } catch {
+        el.imageHint.textContent = 'Some images could not be loaded. Refresh the private link.';
+      }
+    }));
+  }
+
   function queueSave() {
     if (!token || !data || publishing) return;
     dirty = true;
@@ -376,6 +492,7 @@
     el.color.value = saved.color ?? '#F36B35';
     el.content.value = saved.content ?? '';
     draftVersion = data.version ?? 0;
+    void restoreImages();
     el.colorPicker.value = /^#[\da-fA-F]{6}$/.test(el.color.value) ? el.color.value : '#f36b35';
     el.workspace.hidden = false;
     el.status.textContent = 'Private draft · ' + data.guildName;
@@ -392,7 +509,9 @@
   function validate() {
     const value = draft();
     if (!value.channelId) return { field: 'destination', message: 'Choose a destination channel before publishing.' };
-    if (!value.content.trim()) return { field: 'content', message: 'Write a message before publishing.' };
+    if (!value.content.trim() && !images.length) return { field: 'content', message: 'Write a message or add at least one image before publishing.' };
+    if (value.format === 'embed' && images.length > 1) return { field: 'images', message: 'Embed supports one image only.' };
+    if (value.format === 'text' && images.length > 10) return { field: 'images', message: 'Plain text supports up to 10 images.' };
     if (value.content.length > (value.format === 'embed' ? 4000 : 2000)) return { field: 'content', message: 'Message exceeds the Discord length limit.' };
     if (value.format === 'embed' && !/^#[\da-fA-F]{6}$/.test(value.color)) return { field: 'color', message: 'Enter a valid six-digit hex color.' };
     if (value.title.length > 256) return { field: 'title', message: 'Embed title exceeds 256 characters.' };
@@ -402,8 +521,8 @@
   function clearValidation() {
     el.validationAlert.hidden = true;
     el.validationMessage.textContent = '';
-    for (const field of ['destination', 'content', 'color', 'title']) {
-      const control = field === 'destination' ? el.destinationTrigger : el[field];
+    for (const field of ['destination', 'content', 'color', 'title', 'images']) {
+      const control = field === 'destination' ? el.destinationTrigger : field === 'images' ? el.imageAdd : el[field];
       control.setAttribute('aria-invalid', 'false');
       const inline = el[field + 'Error'];
       inline.hidden = true;
@@ -415,7 +534,8 @@
     clearValidation();
     el.validationAlert.hidden = false;
     el.validationMessage.textContent = error.message;
-    const control = error.field === 'destination' ? el.destinationTrigger : el[error.field];
+    const control = error.field === 'destination' ? el.destinationTrigger
+      : error.field === 'images' ? el.imageAdd : el[error.field];
     const inline = el[error.field + 'Error'];
     inline.textContent = error.message;
     inline.hidden = false;
@@ -539,6 +659,10 @@
   for (const [button, value] of [[el.formatEmbed, 'embed'], [el.formatText, 'text']]) {
     button.addEventListener('click', () => {
       if (el.format.value === value) return;
+      if (value === 'embed' && images.length > 1) {
+        showValidation({ field: 'images', message: 'Remove extra images before switching to Embed (maximum one image).' });
+        return;
+      }
       el.format.value = value;
       el.format.dispatchEvent(new Event('change', { bubbles: true }));
     });
@@ -547,6 +671,23 @@
     if (!el.destinationMenu.hidden && !el.destinationSelect.contains(event.target)) {
       closeDestination();
     }
+  });
+  el.imageAdd.addEventListener('click', () => el.imageInput.click());
+  el.imageInput.addEventListener('change', () => {
+    void addImages([...el.imageInput.files]);
+    el.imageInput.value = '';
+  });
+  el.imageDrop.addEventListener('dragover', event => {
+    event.preventDefault();
+    el.imageDrop.classList.add('dragging');
+  });
+  el.imageDrop.addEventListener('dragleave', () => {
+    el.imageDrop.classList.remove('dragging');
+  });
+  el.imageDrop.addEventListener('drop', event => {
+    event.preventDefault();
+    el.imageDrop.classList.remove('dragging');
+    void addImages([...event.dataTransfer.files]);
   });
   el.colorPicker.addEventListener('input', () => {
     el.color.value = el.colorPicker.value.toUpperCase();

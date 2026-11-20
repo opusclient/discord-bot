@@ -70,3 +70,7 @@ The public `/dictate/` address serves only an access-checking loader. The actual
 The link token stays out of HTTP URLs because it is placed in the fragment; the browser removes it from the address bar and keeps it in memory, not in localStorage or cookies. To reopen a draft after reloading, use the original private Discord link while it is still valid. Never share this link: anyone possessing the token can open its draft during its lifetime.
 
 The bootstrap JavaScript and stylesheets are not secret; the actual composition markup and session data remain protected.
+
+## Image attachments
+
+Upload PNG, JPG, GIF or WebP directly from the private editor or drop files onto the image panel. Embed messages support one attached image, displayed inside the embed below its text. Plain text messages support up to 10 images displayed below the text. Each image is limited to 8 MB and each private session to 24 MB total. Uploads are bound to the 15-minute token, verified before publication and discarded when that session expires, publishes or the bot restarts. Images can be removed before publishing.
