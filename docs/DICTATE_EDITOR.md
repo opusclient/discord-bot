@@ -58,3 +58,15 @@ Limits: 2,000 characters for Markdown text and 4,000 characters for embed descri
 - If a publication fails, recheck guild membership, destination channel permissions and whether the bot can send to that channel.
 
 No Discord message is sent until the user explicitly confirms publication.
+
+## Private token-scoped draft access
+
+Each invocation of `/dictate` creates a fresh 256-bit bearer token in the link fragment and a separate draft held in bot process memory. Only a SHA-256 digest of the token is kept server-side. The token expires after 15 minutes, on publication, or when the bot restarts.
+
+The public `/dictate/` address serves only an access-checking loader. The actual editor interface is returned by `GET /dictate/api/editor` only after validating the bearer token and current Discord staff privileges. Direct unauthenticated requests cannot retrieve the composing UI or any draft.
+
+`GET /dictate/api/session` returns only the matching token's draft and its version. `PUT /dictate/api/draft` saves that draft after origin, token, membership, format and version checks. Competing stale updates return HTTP 409. `POST /dictate/api/publish` requires the saved version and publishes the stored draft, not arbitrary message content submitted at publish time.
+
+The link token stays out of HTTP URLs because it is placed in the fragment; the browser removes it from the address bar and keeps it in memory, not in localStorage or cookies. To reopen a draft after reloading, use the original private Discord link while it is still valid. Never share this link: anyone possessing the token can open its draft during its lifetime.
+
+The bootstrap JavaScript and stylesheets are not secret; the actual composition markup and session data remain protected.

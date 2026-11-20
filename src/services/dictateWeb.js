@@ -18,6 +18,7 @@ const sessions = new Map();
 const root = fileURLToPath(new URL('../../web/dictate/', import.meta.url));
 const assets = new Map([
   ['/dictate/', ['index.html', 'text/html; charset=utf-8']],
+  ['/dictate/bootstrap.js', ['bootstrap.js', 'text/javascript; charset=utf-8']],
   ['/dictate/editor.css', ['editor.css', 'text/css; charset=utf-8']],
   ['/dictate/editor.js', ['editor.js', 'text/javascript; charset=utf-8']]
 ]);
@@ -56,7 +57,9 @@ export function createDictateWebSession(interaction) {
   const hash = createHash('sha256').update(token).digest('hex');
   sessions.set(hash, {
     guildId: interaction.guildId, userId: interaction.user.id,
-    issuedAt: Date.now(), expiresAt: Date.now() + ttl, state: 'active'
+    issuedAt: Date.now(), expiresAt: Date.now() + ttl, state: 'active',
+    draft: { channelId: '', format: 'embed', title: '', color: '#5865F2', content: '' },
+    version: 0
   });
   return { url: baseUrl + '/dictate/#token=' + encodeURIComponent(token), expiresAt: Date.now() + ttl };
 }
@@ -95,6 +98,26 @@ async function readBody(req) {
   } catch {
     throw new Error('Invalid JSON body');
   }
+}
+
+function normalizeDraft(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid draft');
+  }
+  const fields = ['channelId', 'format', 'title', 'color', 'content'];
+  if (fields.some(field => typeof value[field] !== 'string')) {
+    throw new Error('Invalid draft fields');
+  }
+  const draft = Object.fromEntries(fields.map(field => [field, value[field]]));
+  if (draft.channelId && !/^\d{16,23}$/.test(draft.channelId)) {
+    throw new Error('Invalid destination channel');
+  }
+  if (!['embed', 'text'].includes(draft.format)) throw new Error('Invalid message format');
+  if (draft.title.length > 256 || draft.color.length > 7 ||
+      draft.content.length > (draft.format === 'embed' ? 4000 : 2000)) {
+    throw new Error('Draft exceeds the allowed length');
+  }
+  return draft;
 }
 
 function safeName(value) {
@@ -232,7 +255,8 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
       });
       return res.end(text);
     }
-    if (pathname !== '/dictate/api/session' && pathname !== '/dictate/api/publish') {
+    if (!['/dictate/api/session', '/dictate/api/editor', '/dictate/api/draft',
+      '/dictate/api/publish'].includes(pathname)) {
       return write(res, 404, { error: 'Not found' });
     }
     if (requireOrigin) {
@@ -243,12 +267,43 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
       if (req.headers.origin && req.headers.origin !== requireOrigin) {
         return write(res, 403, { error: 'Invalid origin' });
       }
-      if (req.method === 'POST' && req.headers.origin !== requireOrigin) {
+      if (['POST', 'PUT'].includes(req.method) && req.headers.origin !== requireOrigin) {
         return write(res, 403, { error: 'Origin is required' });
       }
     }
     const session = verifySession(req);
     if (!session) return write(res, 401, { error: 'Editor link expired. Run /dictate again.' });
+    if (pathname.endsWith('/editor') && req.method === 'GET') {
+      try {
+        await editorContext(client, session);
+        const markup = await readFile(path.join(root, 'editor.html'), 'utf8');
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff'
+        });
+        return res.end(markup);
+      } catch (error) {
+        return write(res, 403, { error: error.message });
+      }
+    }
+    if (pathname.endsWith('/draft') && req.method === 'PUT') {
+      if (!String(req.headers['content-type'] ?? '').startsWith('application/json')) {
+        return write(res, 415, { error: 'JSON required' });
+      }
+      try {
+        await editorContext(client, session);
+        const data = await readBody(req);
+        if (!Number.isSafeInteger(data?.version) || data.version !== session.version) {
+          return write(res, 409, { error: 'This draft was changed in another editor window' });
+        }
+        session.draft = normalizeDraft(data);
+        session.version += 1;
+        return write(res, 200, { version: session.version, savedAt: Date.now() });
+      } catch (error) {
+        return write(res, 400, { error: error.message });
+      }
+    }
     if (pathname.endsWith('/session') && req.method === 'GET') {
       try {
         const context = await editorContext(client, session);
@@ -257,7 +312,8 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
           guildName: context.guild.name,
           channelOptions: context.channels, mentionChannelOptions: context.mentionChannels,
           roleOptions: context.roles, userOptions: context.users,
-          userName: context.actor.displayName
+          userName: context.actor.displayName,
+          draft: session.draft, version: session.version
         });
       } catch (error) {
         return write(res, 403, { error: error.message });
@@ -271,7 +327,11 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
       session.state = 'publishing';
       try {
         const data = await readBody(req);
-        const result = await publish(client, session, data);
+        if (!Number.isSafeInteger(data?.version) || data.version !== session.version) {
+          session.state = 'active';
+          return write(res, 409, { error: 'Draft version mismatch' });
+        }
+        const result = await publish(client, session, session.draft);
         return write(res, 200, result);
       } catch (error) {
         if (session.state === 'publishing') session.state = 'active';

@@ -153,7 +153,19 @@ test('web session is private, scoped to qualified Staff and opens an actual edit
   assert.ok(!context.json.channelOptions.some(row => row.id === voiceChannelId));
   const page = await fetch(url + '/dictate/');
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /id="picker-results"/);
+  const bootstrap = await page.text();
+  assert.match(bootstrap, /id="access-status"/);
+  assert.doesNotMatch(bootstrap, /id="picker-results"/);
+  assert.doesNotMatch(bootstrap, /id="content"/);
+  const protectedEditor = await fetch(url + '/dictate/api/editor');
+  assert.equal(protectedEditor.status, 401);
+  const validEditor = await fetch(url + '/dictate/api/editor', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  assert.equal(validEditor.status, 200);
+  assert.match(await validEditor.text(), /id="picker-results"/);
+  const directEditor = await fetch(url + '/dictate/editor.html');
+  assert.equal(directEditor.status, 404);
   const js = await fetch(url + '/dictate/editor.js');
   assert.equal(js.status, 200);
   assert.match(await js.text(), /setRangeText\(/);
@@ -167,17 +179,77 @@ test('web API rejects missing tokens, cross-origin publish and protected targets
     { channelId: destinationId, format: 'text', content: 'Hi' },
     'https://example.org');
   assert.equal(wrongOrigin.status, 403);
+  const saved = await api(token, 'PUT', 'draft', {
+    channelId: config.auditLogChannelId, format: 'text',
+    title: '', color: '#5865F2', content: 'No', version: 0
+  });
+  assert.equal(saved.status, 200);
   const protectedTarget = await api(token, 'POST', 'publish',
-    { channelId: config.auditLogChannelId, format: 'text', content: 'No' });
+    { version: saved.json.version });
   assert.equal(protectedTarget.status, 400);
   assert.equal(sent.length, 0);
 });
 
+test('each token is bound to its own server-side draft and rejects stale updates', async () => {
+  const first = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const second = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  assert.notEqual(first, second);
+  const firstDraft = {
+    channelId: destinationId, format: 'text', title: '', color: '#5865F2',
+    content: 'Private first draft', version: 0
+  };
+  const saved = await api(first, 'PUT', 'draft', firstDraft);
+  assert.equal(saved.status, 200);
+  assert.equal(saved.json.version, 1);
+  const recovered = await api(first, 'GET', 'session');
+  assert.equal(recovered.json.draft.content, 'Private first draft');
+  assert.equal(recovered.json.version, 1);
+  const isolated = await api(second, 'GET', 'session');
+  assert.equal(isolated.status, 200);
+  assert.equal(isolated.json.draft.content, '');
+  assert.equal(isolated.json.version, 0);
+  const stale = await api(first, 'PUT', 'draft', {
+    ...firstDraft, content: 'Outdated update'
+  });
+  assert.equal(stale.status, 409);
+  const denied = await api('not-a-valid-token', 'PUT', 'draft', firstDraft);
+  assert.equal(denied.status, 401);
+  const foreign = await api(first, 'PUT', 'draft', {
+    ...firstDraft, version: 1, content: 'Malicious'
+  }, 'https://example.org');
+  assert.equal(foreign.status, 403);
+  const unsaved = await api(second, 'POST', 'publish', {
+    version: 0, ...firstDraft
+  });
+  assert.equal(unsaved.status, 400);
+  const stillIsolated = await api(second, 'GET', 'session');
+  assert.equal(stillIsolated.json.draft.content, '');
+  assert.equal(sent.length, 0);
+});
+
+test('stale publish version does not consume a valid private session', async () => {
+  const token = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const saved = await api(token, 'PUT', 'draft', {
+    channelId: destinationId, format: 'text', title: '', color: '#5865F2',
+    content: 'Will publish later', version: 0
+  });
+  assert.equal(saved.status, 200);
+  const stale = await api(token, 'POST', 'publish', { version: 0 });
+  assert.equal(stale.status, 409);
+  const fresh = await api(token, 'GET', 'session');
+  assert.equal(fresh.status, 200);
+  assert.equal(fresh.json.draft.content, 'Will publish later');
+});
+
 test('roles not mentionable by actor are rejected even when typed manually', async () => {
   const token = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
+  const saved = await api(token, 'PUT', 'draft', {
+    channelId: destinationId, format: 'text', title: '', color: '#5865F2',
+    content: 'Restricted <@&' + restrictedRoleId + '>', version: 0
+  });
+  assert.equal(saved.status, 200);
   const result = await api(token, 'POST', 'publish', {
-    channelId: destinationId, format: 'text',
-    content: 'Restricted <@&' + restrictedRoleId + '>'
+    version: saved.json.version
   });
   assert.equal(result.status, 400);
   assert.match(result.json.error, /Invalid role mention/);
@@ -192,9 +264,13 @@ test('publish supports user, role and channel references and is strictly one-tim
     channelId: destinationId, format: 'embed', color: '#5865F2',
     title: 'Team Notice', content: text
   };
+  const saved = await api(token, 'PUT', 'draft', {
+    ...content, version: 0
+  });
+  assert.equal(saved.status, 200);
   const [first, duplicate] = await Promise.all([
-    api(token, 'POST', 'publish', content),
-    api(token, 'POST', 'publish', content)
+    api(token, 'POST', 'publish', { version: saved.json.version }),
+    api(token, 'POST', 'publish', { version: saved.json.version })
   ]);
   assert.equal([first.status, duplicate.status].filter(status => status === 200).length, 1);
   assert.ok([401, 409].includes([first.status, duplicate.status].find(status => status !== 200)));
@@ -203,8 +279,10 @@ test('publish supports user, role and channel references and is strictly one-tim
   assert.deepEqual(sent[0].allowedMentions, {
     parse: [], users: [otherUserId], roles: [mentionRoleId], repliedUser: false
   });
-  const again = await api(token, 'POST', 'publish', content);
+  const again = await api(token, 'POST', 'publish', { version: saved.json.version });
   assert.equal(again.status, 401);
+  const publishedEditor = await api(token, 'GET', 'session');
+  assert.equal(publishedEditor.status, 401);
 });
 
 test('publishing re-checks staff rights on every API request', async () => {
@@ -212,8 +290,7 @@ test('publishing re-checks staff rights on every API request', async () => {
   revoked = true;
   const result = await api(token, 'GET', 'session');
   assert.equal(result.status, 403);
-  const rejected = await api(token, 'POST', 'publish',
-    { channelId: destinationId, format: 'text', content: 'Not allowed' });
+  const rejected = await api(token, 'POST', 'publish', { version: 0 });
   assert.equal(rejected.status, 400);
   assert.equal(sent.length, 1);
 });

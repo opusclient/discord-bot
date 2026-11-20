@@ -24,6 +24,10 @@
   let pickerType = '';
   let activeTab = 'user';
   let publishing = false;
+  let draftVersion = 0;
+  let dirty = false;
+  let saveTimer = null;
+  let savePromise = Promise.resolve();
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, c => ({
@@ -236,6 +240,47 @@
     return result;
   }
 
+  function queueSave() {
+    if (!token || !data || publishing) return;
+    dirty = true;
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      void persistDraft().catch(error => {
+        el.draftStatus.textContent = 'Draft not saved: ' + error.message;
+      });
+    }, 500);
+  }
+
+  async function persistDraft() {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    if (!dirty) {
+      await savePromise;
+      if (dirty) return persistDraft();
+      return;
+    }
+    dirty = false;
+    const snapshot = draft();
+    const current = savePromise.catch(() => {}).then(async () => {
+      const result = await api('draft', {
+        method: 'PUT', body: { ...snapshot, version: draftVersion }
+      });
+      draftVersion = result.version;
+      el.draftStatus.textContent = 'Private draft saved';
+    });
+    savePromise = current;
+    try {
+      await current;
+    } catch (error) {
+      dirty = true;
+      throw error;
+    }
+    if (dirty) return persistDraft();
+  }
+
   function fail(message) {
     el.workspace.hidden = true;
     el.error.hidden = false;
@@ -250,8 +295,15 @@
       opt.textContent = '# ' + item.label;
       el.destination.append(opt);
     }
+    const saved = data.draft ?? {};
+    el.destination.value = saved.channelId ?? '';
+    el.format.value = saved.format ?? 'embed';
+    el.title.value = saved.title ?? '';
+    el.color.value = saved.color ?? '#5865F2';
+    el.content.value = saved.content ?? '';
+    draftVersion = data.version ?? 0;
     el.workspace.hidden = false;
-    el.status.textContent = 'Private session · ' + data.guildName;
+    el.status.textContent = 'Private draft · ' + data.guildName;
     el.expires.textContent = 'Expires ' + new Date(data.expiresAt).toLocaleTimeString([], {
       hour: '2-digit', minute: '2-digit'
     });
@@ -294,7 +346,10 @@
     el.publishError.textContent = '';
     el.confirmPublish.textContent = 'Publishing…';
     try {
-      const result = await api('publish', { method: 'POST', body: draft() });
+      await persistDraft();
+      const result = await api('publish', {
+        method: 'POST', body: { version: draftVersion }
+      });
       el.confirm.close();
       el.workspace.hidden = true;
       el.error.hidden = false;
@@ -324,7 +379,9 @@
 
   async function init() {
     const params = new URLSearchParams(location.hash.slice(1));
-    token = params.get('token') ?? '';
+    token = typeof window !== 'undefined' && typeof window.__dictateToken === 'string'
+      ? window.__dictateToken : (params.get('token') ?? '');
+    if (typeof window !== 'undefined') delete window.__dictateToken;
     history.replaceState(null, '', location.pathname);
     if (!token) {
       fail('This link is missing its private authorization token.');
@@ -339,15 +396,19 @@
   }
 
   for (const id of ['format', 'destination', 'color', 'title', 'content']) {
-    $(id).addEventListener(['content', 'color', 'title'].includes(id) ? 'input' : 'change', refresh);
+    const eventName = ['content', 'color', 'title'].includes(id) ? 'input' : 'change';
+    $(id).addEventListener(eventName, refresh);
+    $(id).addEventListener(eventName, queueSave);
   }
   el.colorPicker.addEventListener('input', () => {
     el.color.value = el.colorPicker.value.toUpperCase();
     refresh();
+    queueSave();
   });
   el.color.addEventListener('input', () => {
     if (/^#[\da-fA-F]{6}$/.test(el.color.value)) el.colorPicker.value = el.color.value;
     refresh();
+    queueSave();
   });
   for (const event of ['click', 'select', 'keyup', 'input', 'focus', 'mouseup']) {
     el.content.addEventListener(event, snapshotSelection);

@@ -1,0 +1,112 @@
+<div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brandmark">O</div>
+        <div>
+          <span class="eyebrow">OPUS CLIENT / SYSTEM</span>
+          <h1>Dictate <span>Editor</span></h1>
+        </div>
+      </div>
+      <div class="topmeta"><span class="live-dot"></span><span id="status">Opening session</span></div>
+    </header>
+    <main class="workspace" id="workspace" hidden>
+      <section class="compose card">
+        <div class="heading">
+          <div>
+            <span class="section-number">01 / COMPOSE</span>
+            <h2>New message</h2>
+          </div>
+          <div class="expires" id="expires">Private session</div>
+        </div>
+        <div class="form-grid">
+          <label class="control">
+            <span class="field-name">Destination</span>
+            <select id="destination" required><option value="">Choose a channel</option></select>
+          </label>
+          <label class="control">
+            <span class="field-name">Format</span>
+            <select id="format"><option value="embed">Embed message</option><option value="text">Markdown text</option></select>
+          </label>
+        </div>
+        <div class="format-options" id="format-options">
+          <label class="control">
+            <span class="field-name">Embed title <span class="muted">optional</span></span>
+            <input id="title" type="text" maxlength="256" placeholder="e.g. Development Update" autocomplete="off">
+          </label>
+          <label class="control color-control">
+            <span class="field-name">Accent</span>
+            <div class="color-input"><input id="color-picker" type="color" value="#5865f2" aria-label="Embed accent color"><input id="color" type="text" maxlength="7" value="#5865F2" aria-label="Hex color code"></div>
+          </label>
+        </div>
+        <div class="editor-head">
+          <div>
+            <span class="field-name">Message content</span>
+            <div class="field-help">Place your cursor, then insert a user, role, or channel.</div>
+          </div>
+          <span id="counter" class="counter">0 / 4000</span>
+        </div>
+        <div class="editor-shell">
+          <div class="toolbar">
+            <button id="mention-person" type="button" class="toolbar-button" aria-haspopup="true" aria-expanded="false"><span class="toolbar-symbol">@</span> Add User / Role</button>
+            <button id="mention-channel" type="button" class="toolbar-button" aria-haspopup="true" aria-expanded="false"><span class="toolbar-symbol">#</span> Add Channel</button>
+            <span class="toolbar-spacer"></span>
+            <span class="toolbar-hint">Insert at cursor</span>
+          </div>
+          <div id="picker" class="picker" hidden>
+            <div class="picker-header"><span id="picker-title">Select mention</span><button id="picker-close" type="button" aria-label="Close picker">Close</button></div>
+            <input id="picker-search" autocomplete="off" spellcheck="false" placeholder="Search names…" aria-label="Search user role or channel">
+            <div class="picker-tabs" id="picker-tabs"></div>
+            <div id="picker-results" class="picker-results" role="listbox"></div>
+          </div>
+          <textarea id="content" spellcheck="true" aria-label="Message content" placeholder="Write your message here…&#10;&#10;Use the toolbar to insert mentions at the cursor position."></textarea>
+          <div class="editor-bottom">
+            <span>Markdown and Discord mentions supported</span>
+            <span>Ctrl / Cmd + Enter to review</span>
+          </div>
+        </div>
+        <div class="actions">
+          <span class="draft-status" id="draft-status">Private token required to access this draft</span>
+          <button id="publish" class="primary" type="button">Review & Publish <span class="action-arrow">→</span></button>
+        </div>
+      </section>
+      <aside class="right-column">
+        <section class="card preview-card">
+          <div class="heading preview-heading"><div><span class="section-number">02 / LIVE PREVIEW</span><h2>Discord appearance</h2></div><span class="preview-pill">PREVIEW</span></div>
+          <div class="preview-body">
+            <div class="message-avatar">O</div>
+            <div class="message-area">
+              <div class="message-byline"><strong>Opus System</strong><span class="app-tag">APP</span><span class="timestamp">Today</span></div>
+              <div id="preview-message" class="preview-message"></div>
+            </div>
+          </div>
+          <p class="preview-foot">Mentions render here without notifying anyone. A notification is sent only when published.</p>
+        </section>
+        <section class="card details-card">
+          <span class="section-number">MESSAGE DETAILS</span>
+          <div class="detail-line"><span>Destination</span><strong id="selected-destination">Not selected</strong></div>
+          <div class="detail-line"><span>Format</span><strong id="selected-format">Embed</strong></div>
+          <div class="detail-line"><span>Mentions</span><strong id="mention-count">0</strong></div>
+          <div class="detail-line"><span>Session</span><strong>Single publication</strong></div>
+        </section>
+      </aside>
+    </main>
+    <section class="error-card" id="error" hidden>
+      <span class="section-number">SESSION UNAVAILABLE</span>
+      <h2>Unable to open the editor</h2>
+      <p id="error-message"></p>
+      <p>Run <code>/dictate</code> again in Discord to open a new private session.</p>
+    </section>
+    <footer>OPUS SYSTEM · PRIVATE EDITOR · LINK EXPIRES AFTER 15 MINUTES</footer>
+  </div>
+  <dialog id="confirm">
+    <div class="dialog-body">
+      <span class="section-number">CONFIRM PUBLICATION</span>
+      <h2>Publish this message?</h2>
+      <p id="confirm-text"></p>
+      <div class="dialog-actions">
+        <button id="cancel" type="button" class="secondary">Go back</button>
+        <button id="confirm-publish" type="button" class="primary">Publish to Discord</button>
+      </div>
+      <div id="publish-error" class="publish-error" role="alert"></div>
+    </div>
+  </dialog>
