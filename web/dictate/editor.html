@@ -11,14 +11,27 @@
       </div>
 
       <div class="form-grid">
-        <label class="control">
+        <div class="control">
           <span class="field-name">Destination channel</span>
-          <select id="destination" required><option value="">Select a channel</option></select>
-        </label>
-        <label class="control">
+          <select id="destination" class="native-select" tabindex="-1" aria-hidden="true" required><option value="">Select a channel</option></select>
+          <div class="custom-select" id="destination-select">
+            <button id="destination-trigger" class="select-trigger" type="button" aria-label="Choose destination channel" aria-haspopup="listbox" aria-expanded="false" aria-controls="destination-options">
+              <span id="destination-value">Select a channel</span><span class="select-chevron" aria-hidden="true"></span>
+            </button>
+            <div id="destination-menu" class="select-menu" hidden>
+              <input id="destination-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search channels…" aria-label="Search destination channels">
+              <div id="destination-options" class="select-options" role="listbox" aria-label="Destination channels"></div>
+            </div>
+          </div>
+        </div>
+        <div class="control">
           <span class="field-name">Message format</span>
-          <select id="format"><option value="embed">Embed message</option><option value="text">Plain text / Markdown</option></select>
-        </label>
+          <select id="format" class="native-select" tabindex="-1" aria-hidden="true"><option value="embed">Embed message</option><option value="text">Plain text / Markdown</option></select>
+          <div class="format-segment" role="group" aria-label="Message format">
+            <button id="format-embed" type="button" aria-pressed="true">Embed</button>
+            <button id="format-text" type="button" aria-pressed="false">Text / Markdown</button>
+          </div>
+        </div>
       </div>
 
       <div class="format-options" id="format-options">

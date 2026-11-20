@@ -74,6 +74,7 @@ function createEditor() {
   el('destination').value = ids.channel;
   el('color').value = '#5865F2';
   el('picker').hidden = true;
+  el('destination-menu').hidden = true;
   return { ...script.__probe, el, ids, document };
 }
 
@@ -88,7 +89,6 @@ test('role picker inserts a mention into the content at the saved cursor', () =>
   editor.el('picker-tabs').children[1].click();
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> world');
-  assert.equal(editor.el('mention-count').textContent, '1');
   assert.match(editor.el('preview-message').innerHTML, /@Engineering/);
   assert.equal(editor.el('picker').hidden, true);
   assert.equal(editor.document.activeElement, content);
@@ -135,7 +135,6 @@ test('toolbar buttons insert user role and channel into the same editable draft'
   editor.el('mention-channel').click();
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> <#' + editor.ids.channel + '> ');
-  assert.equal(editor.el('mention-count').textContent, '2');
   assert.match(editor.el('preview-message').innerHTML, /@Engineering/);
   assert.match(editor.el('preview-message').innerHTML, /#voice-chat/);
 });
@@ -151,4 +150,25 @@ test('picker safely appends if the draft changes after the saved cursor position
   content.value = 'Updated content';
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Updated content <@' + editor.ids.user + '> ');
+});
+
+test('destination dropdown opens a bounded searchable list and updates the draft', () => {
+  const editor = createEditor();
+  const destination = editor.el('destination');
+  destination.value = '';
+  editor.el('destination-trigger').click();
+  assert.equal(editor.el('destination-menu').hidden, false);
+  assert.equal(editor.el('destination-options').children.length, 1);
+  editor.el('destination-options').children[0].click();
+  assert.equal(destination.value, editor.ids.channel);
+  assert.equal(editor.el('destination-value').textContent, '# announcements');
+  assert.equal(editor.el('destination-menu').hidden, true);
+});
+
+test('format toggle changes message type without a native dropdown', () => {
+  const editor = createEditor();
+  editor.el('format-embed').click();
+  assert.equal(editor.el('format').value, 'embed');
+  editor.el('format-text').click();
+  assert.equal(editor.el('format').value, 'text');
 });

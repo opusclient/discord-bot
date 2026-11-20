@@ -210,11 +210,7 @@ export function buildDictateMessage(draft) {
     .setDescription(draft.content)
     .setColor(draft.color ? Number.parseInt(draft.color.slice(1), 16) : 0x5865F2);
   if (draft.title?.trim()) embed.setTitle(draft.title.trim());
-  const pings = [
-    ...users.map(id => '<@' + id + '>'),
-    ...roles.map(id => '<@&' + id + '>')
-  ];
-  return { content: pings.length ? pings.join(' ') : null, embeds: [embed], allowedMentions };
+  return { content: null, embeds: [embed], allowedMentions };
 }
 
 export function buildDictatePreview(id, draft, { hidden = false } = {}) {

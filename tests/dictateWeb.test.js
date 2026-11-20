@@ -276,6 +276,7 @@ test('publish supports user, role and channel references and is strictly one-tim
   assert.ok([401, 409].includes([first.status, duplicate.status].find(status => status !== 200)));
   assert.equal(sent.length, 1);
   assert.equal(sent[0].embeds[0].data.title, 'Team Notice');
+  assert.equal(sent[0].content, null);
   assert.deepEqual(sent[0].allowedMentions, {
     parse: [], users: [otherUserId], roles: [mentionRoleId], repliedUser: false
   });

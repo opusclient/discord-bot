@@ -5,6 +5,10 @@
   const el = {
     workspace: $('workspace'), error: $('error'), errorMessage: $('error-message'),
     status: $('status'), expires: $('expires'), destination: $('destination'),
+    destinationSelect: $('destination-select'), destinationTrigger: $('destination-trigger'),
+    destinationValue: $('destination-value'), destinationMenu: $('destination-menu'),
+    destinationSearch: $('destination-search'), destinationOptions: $('destination-options'),
+    formatEmbed: $('format-embed'), formatText: $('format-text'),
     format: $('format'), formatOptions: $('format-options'), title: $('title'),
     color: $('color'), colorPicker: $('color-picker'), content: $('content'),
     counter: $('counter'), preview: $('preview-message'),
@@ -27,6 +31,7 @@
   let dirty = false;
   let saveTimer = null;
   let savePromise = Promise.resolve();
+  let destinationHighlight = 0;
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, c => ({
@@ -84,8 +89,80 @@
     };
   }
 
+  function syncSelectors() {
+    if (!data) return;
+    const selected = data.channelOptions.find(item => item.id === el.destination.value);
+    el.destinationValue.textContent = selected ? '# ' + selected.label : 'Select a channel';
+    el.destinationTrigger.classList.toggle('has-value', Boolean(selected));
+    el.formatEmbed.setAttribute('aria-pressed', String(el.format.value === 'embed'));
+    el.formatText.setAttribute('aria-pressed', String(el.format.value === 'text'));
+  }
+
+  function closeDestination() {
+    el.destinationMenu.hidden = true;
+    el.destinationTrigger.setAttribute('aria-expanded', 'false');
+  }
+
+  function highlightDestination() {
+    for (const [index, item] of [...el.destinationOptions.children].entries()) {
+      if (item.className.startsWith('select-option')) {
+        item.classList.toggle('highlighted', index === destinationHighlight);
+      }
+    }
+  }
+
+  function drawDestinations() {
+    const query = el.destinationSearch.value.trim().toLocaleLowerCase();
+    const items = data.channelOptions.filter(item => item.label.toLocaleLowerCase().includes(query));
+    el.destinationOptions.replaceChildren();
+    destinationHighlight = Math.max(0, items.findIndex(item => item.id === el.destination.value));
+    if (destinationHighlight >= 8) destinationHighlight = 0;
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'select-empty';
+      empty.textContent = 'No matching channels';
+      el.destinationOptions.append(empty);
+      return;
+    }
+    for (const [index, item] of items.entries()) {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'select-option';
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', String(item.id === el.destination.value));
+      option.textContent = '# ' + item.label;
+      option.addEventListener('click', () => {
+        el.destination.value = item.id;
+        closeDestination();
+        syncSelectors();
+        el.destination.dispatchEvent(new Event('change', { bubbles: true }));
+        el.destinationTrigger.focus();
+      });
+      option.addEventListener('mouseenter', () => {
+        destinationHighlight = index;
+        highlightDestination();
+      });
+      el.destinationOptions.append(option);
+    }
+    highlightDestination();
+  }
+
+  function toggleDestination() {
+    if (!el.destinationMenu.hidden) {
+      closeDestination();
+      return;
+    }
+    if (!el.picker.hidden) hidePicker();
+    el.destinationSearch.value = '';
+    el.destinationMenu.hidden = false;
+    el.destinationTrigger.setAttribute('aria-expanded', 'true');
+    drawDestinations();
+    el.destinationSearch.focus();
+  }
+
   function refresh() {
     if (!data) return;
+    syncSelectors();
     const value = el.content.value;
     const max = el.format.value === 'embed' ? 4000 : 2000;
     el.counter.textContent = value.length + ' / ' + max;
@@ -197,6 +274,7 @@
 
   function openPicker(type) {
     if (!data) return;
+    closeDestination();
     if (pickerType === type && !el.picker.hidden) {
       hidePicker();
       return;
@@ -295,6 +373,7 @@
     el.color.value = saved.color ?? '#F36B35';
     el.content.value = saved.content ?? '';
     draftVersion = data.version ?? 0;
+    el.colorPicker.value = /^#[\da-fA-F]{6}$/.test(el.color.value) ? el.color.value : '#f36b35';
     el.workspace.hidden = false;
     el.status.textContent = 'Private draft · ' + data.guildName;
     el.expires.textContent = 'Expires ' + new Date(data.expiresAt).toLocaleTimeString([], {
@@ -326,7 +405,9 @@
     const target = data.channelOptions.find(item => item.id === el.destination.value);
     el.confirmText.textContent =
       'Destination: #' + target.label + '. Publish as Opus System? ' +
-      'Any selected user or role mentions may notify members.';
+      (el.format.value === 'text'
+        ? 'Text mentions may notify members.'
+        : 'Embed mentions appear once and do not send notifications.');
     el.publishError.textContent = '';
     el.confirm.showModal();
   }
@@ -356,7 +437,7 @@
       link.rel = 'noopener noreferrer';
       link.target = '_blank';
       link.textContent = 'Open published message';
-      link.style.color = '#b4aafe';
+      link.style.color = '#f36b35';
       el.error.append(link);
       token = '';
       el.status.textContent = 'Published';
@@ -393,6 +474,39 @@
     $(id).addEventListener(eventName, refresh);
     $(id).addEventListener(eventName, queueSave);
   }
+  el.destinationTrigger.addEventListener('click', toggleDestination);
+  el.destinationSearch.addEventListener('input', drawDestinations);
+  el.destinationSearch.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeDestination();
+      el.destinationTrigger.focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const count = el.destinationOptions.children.length;
+      if (count && el.destinationOptions.children[0].className.startsWith('select-option')) {
+        destinationHighlight = (destinationHighlight + (event.key === 'ArrowDown' ? 1 : -1) + count) % count;
+        highlightDestination();
+        el.destinationOptions.children[destinationHighlight].scrollIntoView({ block: 'nearest' });
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const option = el.destinationOptions.children[destinationHighlight];
+      if (option?.className.startsWith('select-option')) option.click();
+    }
+  });
+  for (const [button, value] of [[el.formatEmbed, 'embed'], [el.formatText, 'text']]) {
+    button.addEventListener('click', () => {
+      if (el.format.value === value) return;
+      el.format.value = value;
+      el.format.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+  document.addEventListener('pointerdown', event => {
+    if (!el.destinationMenu.hidden && !el.destinationSelect.contains(event.target)) {
+      closeDestination();
+    }
+  });
   el.colorPicker.addEventListener('input', () => {
     el.color.value = el.colorPicker.value.toUpperCase();
     refresh();
@@ -425,6 +539,7 @@
   el.pickerClose.addEventListener('click', hidePicker);
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !el.picker.hidden) hidePicker();
+    if (event.key === 'Escape' && !el.destinationMenu.hidden) closeDestination();
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !el.workspace.hidden) {
       event.preventDefault();
       showReview();

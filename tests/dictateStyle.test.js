@@ -17,6 +17,8 @@ test('Dictate uses the restrained dark and orange design system', () => {
 test('minimal editor layout preserves all interactive surfaces', () => {
   const required = [
     'workspace', 'error', 'error-message', 'status', 'expires', 'destination',
+    'destination-trigger', 'destination-menu', 'destination-search', 'destination-options',
+    'destination-value', 'destination-select', 'format-embed', 'format-text',
     'format', 'format-options', 'title', 'color', 'color-picker', 'content',
     'counter', 'preview-message', 'publish', 'mention-person', 'mention-channel', 'picker',
     'picker-title', 'picker-close', 'picker-tabs', 'picker-search',
