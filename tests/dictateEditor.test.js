@@ -115,3 +115,40 @@ test('mention picker appends when no previous cursor position is known', () => {
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Welcome <@' + editor.ids.user + '> ');
 });
+
+test('toolbar buttons insert user role and channel into the same editable draft', () => {
+  const editor = createEditor();
+  const content = editor.el('content');
+  content.value = 'Hello';
+  content.selectionStart = 5;
+  content.selectionEnd = 5;
+  content.focus();
+  editor.el('mention-person').click();
+  editor.el('picker-tabs').children[1].click();
+  editor.el('picker-search').value = 'Engineering';
+  editor.el('picker-search').dispatchEvent({ type: 'input' });
+  editor.el('picker-results').children[0].click();
+  assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> ');
+  content.selectionStart = content.value.length;
+  content.selectionEnd = content.selectionStart;
+  content.dispatchEvent({ type: 'keyup' });
+  editor.el('mention-channel').click();
+  editor.el('picker-results').children[0].click();
+  assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> <#' + editor.ids.channel + '> ');
+  assert.equal(editor.el('mention-count').textContent, '2');
+  assert.match(editor.el('preview-message').innerHTML, /@Engineering/);
+  assert.match(editor.el('preview-message').innerHTML, /#voice-chat/);
+});
+
+test('picker safely appends if the draft changes after the saved cursor position', () => {
+  const editor = createEditor();
+  const content = editor.el('content');
+  content.value = 'Hi';
+  content.selectionStart = 0;
+  content.selectionEnd = 0;
+  content.focus();
+  editor.el('mention-person').click();
+  content.value = 'Updated content';
+  editor.el('picker-results').children[0].click();
+  assert.equal(content.value, 'Updated content <@' + editor.ids.user + '> ');
+});
