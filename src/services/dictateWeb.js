@@ -127,6 +127,15 @@ async function editorContext(client, session) {
       (a.parent?.rawPosition ?? 0) - (b.parent?.rawPosition ?? 0) ||
       a.rawPosition - b.rawPosition)
     .map(channel => ({ id: channel.id, label: safeName(channel.name) }));
+  const mentionChannels = [...guild.channels.cache.values()]
+    .filter(channel =>
+      [ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildVoice,
+        ChannelType.GuildStageVoice, ChannelType.GuildForum, ChannelType.GuildMedia].includes(channel.type) &&
+      channel.permissionsFor?.(actor)?.has(PermissionsBitField.Flags.ViewChannel))
+    .sort((a, b) =>
+      (a.parent?.rawPosition ?? 0) - (b.parent?.rawPosition ?? 0) ||
+      a.rawPosition - b.rawPosition)
+    .map(channel => ({ id: channel.id, label: safeName(channel.name) }));
   const roles = [...guild.roles.cache.values()]
     .filter(role => role.id !== guild.id && !role.managed &&
       (role.mentionable || actor.permissions.has(PermissionsBitField.Flags.MentionEveryone)))
@@ -138,7 +147,7 @@ async function editorContext(client, session) {
       id: member.id, label: safeName(member.displayName ?? member.user?.username),
       username: safeName(member.user?.username)
     })).sort((a, b) => a.label.localeCompare(b.label));
-  return { guild, actor, bot, channels, roles, users };
+  return { guild, actor, bot, channels, mentionChannels, roles, users };
 }
 
 async function publish(client, session, data) {
@@ -246,7 +255,8 @@ export function createDictateWebHandler(client, { requireOrigin = dictateWebBase
         return write(res, 200, {
           expiresAt: session.expiresAt,
           guildName: context.guild.name,
-          channelOptions: context.channels, roleOptions: context.roles, userOptions: context.users,
+          channelOptions: context.channels, mentionChannelOptions: context.mentionChannels,
+          roleOptions: context.roles, userOptions: context.users,
           userName: context.actor.displayName
         });
       } catch (error) {

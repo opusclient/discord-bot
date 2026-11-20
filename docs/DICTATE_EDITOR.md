@@ -42,7 +42,7 @@ Use a dedicated HTTPS hostname; do not publish port `8791` directly. Cloudflare 
 
 ## Editor details
 
-The composing surface is a normal textarea to preserve cursor positions and keyboard editing. The User/Role and Channel buttons open searchable lists. A selected item is inserted as an actual Discord mention token: `<@userId>`, `<@&roleId>` or `<#channelId>`.
+The composing surface is a normal textarea to preserve cursor positions and keyboard editing. The selection is saved while browsing references, and an insertion updates the text, selection, preview and mention count immediately. If no prior cursor position is available, the mention is appended. The User/Role and Channel buttons open searchable lists. Channel references include visible voice, stage, forum and media channels, not just channels available as publishing destinations. A selected item is inserted as an actual Discord mention token: `<@userId>`, `<@&roleId>` or `<#channelId>`.
 
 The preview is local and does not ping anyone. Role options that the operator cannot mention are hidden. The final output may differ slightly from the preview for Discord-specific layouts, attachments or mention rendering.
 

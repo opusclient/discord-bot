@@ -14,6 +14,7 @@ const actorId = '123456789012345611';
 const otherUserId = '123456789012345612';
 const destinationId = '123456789012345613';
 const mentionedChannelId = '123456789012345614';
+const voiceChannelId = '123456789012345621';
 const mentionRoleId = '123456789012345615';
 const restrictedRoleId = '123456789012345616';
 const botId = config.clientId || '123456789012345617';
@@ -54,6 +55,11 @@ const mentionedChannel = {
   type: ChannelType.GuildText,
   permissionsFor: () => permitted
 };
+const voiceChannel = {
+  id: voiceChannelId, name: 'voice-chat', rawPosition: 2,
+  type: ChannelType.GuildVoice,
+  permissionsFor: () => permitted
+};
 const audit = {
   id: config.auditLogChannelId, name: 'audit-logs',
   type: ChannelType.GuildText, isTextBased: () => true,
@@ -80,6 +86,7 @@ const guild = {
   channels: {
     cache: new Map([
       [destinationId, target], [mentionedChannelId, mentionedChannel],
+      [voiceChannelId, voiceChannel],
       [config.auditLogChannelId, audit]
     ]),
     fetch: async id => guild.channels.cache.get(id) ?? null
@@ -142,6 +149,8 @@ test('web session is private, scoped to qualified Staff and opens an actual edit
   assert.ok(context.json.roleOptions.some(row => row.id === mentionRoleId));
   assert.ok(!context.json.roleOptions.some(row => row.id === restrictedRoleId));
   assert.ok(context.json.userOptions.some(row => row.id === otherUserId));
+  assert.ok(context.json.mentionChannelOptions.some(row => row.id === voiceChannelId));
+  assert.ok(!context.json.channelOptions.some(row => row.id === voiceChannelId));
   const page = await fetch(url + '/dictate/');
   assert.equal(page.status, 200);
   assert.match(await page.text(), /id="picker-results"/);
@@ -178,7 +187,7 @@ test('roles not mentionable by actor are rejected even when typed manually', asy
 test('publish supports user, role and channel references and is strictly one-time', async () => {
   const token = new URL(createDictateWebSession(interaction()).url).hash.split('token=')[1];
   const text = 'Hello <@' + otherUserId + '> <@&' + mentionRoleId +
-    '> see <#' + mentionedChannelId + '>';
+    '> see <#' + mentionedChannelId + '> and <#' + voiceChannelId + '>';
   const content = {
     channelId: destinationId, format: 'embed', color: '#5865F2',
     title: 'Team Notice', content: text

@@ -20,7 +20,7 @@
 
   let token = '';
   let data = null;
-  let selection = { start: 0, end: 0 };
+  let selection = null;
   let pickerType = '';
   let activeTab = 'user';
   let publishing = false;
@@ -35,7 +35,7 @@
     const match = /^<(@!?|@&|#)(\d{16,23})>$/.exec(tokenText);
     if (!match) return escapeHtml(tokenText);
     const [, type, id] = match;
-    const source = type === '#' ? data.channelOptions : type === '@&' ? data.roleOptions : data.userOptions;
+    const source = type === '#' ? (data.mentionChannelOptions ?? data.channelOptions) : type === '@&' ? data.roleOptions : data.userOptions;
     const label = source.find(item => item.id === id)?.label;
     if (!label) return escapeHtml(tokenText);
     const prefix = type === '#' ? '#' : '@';
@@ -64,7 +64,11 @@
   }
 
   function snapshotSelection() {
-    selection = { start: el.content.selectionStart, end: el.content.selectionEnd };
+    const start = el.content.selectionStart;
+    const end = el.content.selectionEnd;
+    if (Number.isInteger(start) && Number.isInteger(end)) {
+      selection = { start, end, length: el.content.value.length };
+    }
   }
 
   function draft() {
@@ -121,26 +125,30 @@
     const query = el.pickerSearch.value.toLocaleLowerCase().trim();
     const options = activeTab === 'user'
       ? data.userOptions
-      : activeTab === 'role' ? data.roleOptions : data.channelOptions;
+      : activeTab === 'role' ? data.roleOptions : (data.mentionChannelOptions ?? data.channelOptions);
     return options.filter(item =>
       !query || (item.label + ' ' + (item.username ?? '')).toLocaleLowerCase().includes(query)
     ).slice(0, 70);
   }
 
-  function insertToken(item) {
-    const prefix = activeTab === 'channel' ? '<#'
-      : activeTab === 'role' ? '<@&' : '<@';
-    const value = prefix + item.id + '>';
+  function insertToken(item, type = activeTab) {
+    const id = String(item.id ?? '');
+    if (!/^\d{16,23}$/.test(id)) return;
+    const prefix = type === 'channel' ? '<#' : type === 'role' ? '<@&' : '<@';
+    const value = prefix + id + '>';
     const text = el.content.value;
-    const at = Math.min(selection.start, text.length);
-    const to = Math.min(selection.end, text.length);
+    const range = selection?.length === text.length
+      ? selection : { start: text.length, end: text.length };
+    const at = Math.min(Math.max(0, range.start), text.length);
+    const to = Math.min(Math.max(at, range.end), text.length);
     const leftSpace = at > 0 && !/\s/.test(text[at - 1]) ? ' ' : '';
-    const rightSpace = to < text.length && !/\s/.test(text[to]) ? ' ' : ' ';
-    const insertion = leftSpace + value + rightSpace;
-    el.content.setRangeText(insertion, at, to, 'end');
+    const rightSpace = to < text.length && /\s/.test(text[to]) ? '' : ' ';
+    el.content.focus({ preventScroll: true });
+    el.content.setRangeText(leftSpace + value + rightSpace, at, to, 'end');
     snapshotSelection();
+    el.content.dispatchEvent(new Event('input', { bubbles: true }));
     hidePicker();
-    refresh();
+    el.draftStatus.textContent = 'Inserted ' + (type === 'channel' ? '#' : '@') + item.label + ' into message';
   }
 
   function drawPicker() {
@@ -184,7 +192,8 @@
         : activeTab === 'role' ? 'Discord role' : '@' + (item.username ?? item.label);
       text.append(title, sub);
       button.append(badge, text);
-      button.addEventListener('click', () => insertToken(item));
+      const type = activeTab;
+      button.addEventListener('click', () => insertToken(item, type));
       el.pickerResults.append(button);
     }
   }
@@ -343,6 +352,9 @@
   for (const event of ['click', 'select', 'keyup', 'input', 'focus', 'mouseup']) {
     el.content.addEventListener(event, snapshotSelection);
   }
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === el.content) snapshotSelection();
+  });
   for (const button of [el.mentionPerson, el.mentionChannel]) {
     button.addEventListener('pointerdown', snapshotSelection);
   }
