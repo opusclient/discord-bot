@@ -22,7 +22,7 @@ const groups = {
       heading: 'GETTING STARTED',
       title: 'General & Support',
       description: 'Open tickets, check your account or get assistance.',
-      commands: ['/help', '/info', '/invites', '/ticket open', '/ticket status', '/punishments view']
+      commands: ['/verify', '/help', '/info', '/invites', '/ticket open', '/ticket status', '/punishments view']
     },
     {
       heading: 'TICKET DESK',

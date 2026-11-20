@@ -136,11 +136,6 @@ export async function refreshVerifyMessage(client) {
   return sent;
 }
 
-// ---------- Join notification (DM first, channel ping only as a fallback) ----------
-
-// The "Verification required" card. The DM variant carries its own Verify button
-// (verification happens without ever opening the channel); the channel fallback
-// variant points at the Verify panel below instead.
 function buildVerificationRequiredEmbed(guild, userId, { inDm = false } = {}) {
   return baseEmbed(COLORS.warn)
     .setTitle('Verification required')
@@ -156,15 +151,30 @@ function buildVerificationRequiredEmbed(guild, userId, { inDm = false } = {}) {
     .setFooter({ text: guild.name });
 }
 
-// Announces verification to a joining human: the card goes straight to their DMs -
-// private, with a Verify button inside, so the verify channel no longer collects one
-// ping per join that every unverified member can read. Only when the DM cannot be
-// delivered (DMs closed) is a ping posted in the verify channel - and it is removed
-// again once that member verifies (sweepVerifyPings).
 export async function sendVerifyNotification(member) {
-  if (!isVerifyEnabled() || member.user?.bot) return { sent: false };
-  // Already verified (rejoiners, manual assignment) - nothing to announce.
-  if (config.verifiedRoleId && member.roles.cache.has(config.verifiedRoleId)) return { sent: false };
+  if (!isVerifyEnabled() || member.user?.bot) return { sent: false, pinged: false };
+  if (config.verifiedRoleId && member.roles.cache.has(config.verifiedRoleId)) {
+    return { sent: false, pinged: false };
+  }
+
+  let pinged = false;
+  const channel = await member.guild.channels.fetch(config.verify.channelId).catch(() => null);
+  if (channel?.isTextBased()) {
+    try {
+      const message = await channel.send({
+        content: `<@${member.id}>`,
+        allowedMentions: { users: [member.id], roles: [], parse: [] }
+      });
+      pinged = true;
+      try {
+        await message.delete();
+      } catch (error) {
+        console.error('[verify] Could not immediately delete verification mention:', error.message);
+      }
+    } catch (error) {
+      console.error('[verify] Could not send verification mention:', error.message);
+    }
+  }
 
   try {
     await member.send({
@@ -175,21 +185,11 @@ export async function sendVerifyNotification(member) {
         ),
       ],
     });
-    return { sent: true };
-  } catch (err) {
-    console.error(`[verify] DM to ${member.id} failed (${err.message}) - falling back to the channel ping.`);
+    return { sent: true, pinged };
+  } catch (error) {
+    console.error('[verify] Could not DM verification reminder:', member.id, error.message);
+    return { sent: false, pinged };
   }
-
-  const channel = await member.guild.channels.fetch(config.verify.channelId).catch(() => null);
-  if (!channel || !channel.isTextBased()) return { sent: false };
-  await channel
-    .send({
-      content: `<@${member.id}>`,
-      embeds: [buildVerificationRequiredEmbed(member.guild, member.id)],
-      allowedMentions: { users: [member.id], roles: [] },
-    })
-    .catch((err) => console.error('[verify] Failed to post the fallback ping:', err.message));
-  return { sent: false };
 }
 
 // Deletes a member's fallback ping from the verify channel after they verify, so the

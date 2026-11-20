@@ -1,11 +1,12 @@
 # Commands and features
 
-Opus System registers **25 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
+Opus System registers **26 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
 
 ## General and community
 
 | Command | Purpose |
 | --- | --- |
+| `/verify` | Verify your own account manually and unlock member channels; same eligibility rules as the Verify button |
 | `/help` | Components V2 command browser with scoped navigation |
 | `/info [user]` | Member profile: avatar, server join date, account age, role positions, promotion/demotion history and invites |
 | `/invites [user]` | Verified invite attribution: total invited, still in guild, left and currently active links |

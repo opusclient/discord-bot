@@ -2,16 +2,14 @@
 
 **Production: NBI Edge 01 (`nbi-edge-01`) exclusively.**
 
-**Current access: Mac → NBI Core 01 (`nbi-core-01`, SSH jump only) → NBI Edge 01 (`nbi-edge-01`).** No direct production route has been established yet. Core 01 must not host or receive Discord bot source, production services, or runtime deployments.
+**Direct SSH: `ssh -p 15564 root@14.241.111.182`.** Core 01 is not part of the deployment route.
 
 ## Mandatory preflight
 
-1. Load `~/.config/opusclient/discord-bot-production.json` and confirm `environment=production`, `hostname=nbi-edge-01`, `connection.mode=ssh-proxyjump`, and `connection.jumpHostname=nbi-core-01`.
-2. Verify the SSH jump server independently reports `hostname -s` = `nbi-core-01`.
-3. Through that jump host, verify the actual production destination independently reports `hostname -s` = `nbi-edge-01`.
-4. Validate the application directory, service, and expected runtime configuration **on Edge 01** before making changes.
-5. If any check fails, stop. Never copy production code, run a bot service, or change a systemd unit on Core 01 as a fallback.
+1. Read `~/.config/opusclient/discord-bot-production.json` and require `environment=production`, `hostname=nbi-edge-01`, `connection.mode=ssh-direct`, host `root@14.241.111.182` and port `15564`.
+2. Connect directly to the specified host and independently confirm `hostname -s` returns exactly `nbi-edge-01`.
+3. Confirm the correct production directory, service, runtime configuration and existing backups on Edge 01.
+4. Abort on any failed check. Never deploy, restart or modify Discord bots on Core 01.
+5. Preserve production configuration and data. Back up changed source before upload and validate the bot after deployment.
 
-The legacy Core 01 deployment path is forbidden. Using Core 01 as an SSH transport hop is explicitly permitted and currently necessary. Only an explicit owner instruction can change the production destination or routing policy.
-
-`npm run deploy` registers Discord guild slash commands; it is separate from deploying the production bot runtime.
+`npm run deploy` registers Discord slash commands only; it does not deploy the bot runtime.
