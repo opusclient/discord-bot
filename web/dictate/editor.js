@@ -106,7 +106,7 @@
     el.preview.className = 'preview-message';
     const body = renderContent(value || ' ');
     if (el.format.value === 'embed') {
-      const color = /^#[\da-fA-F]{6}$/.test(el.color.value) ? el.color.value : '#5865f2';
+      const color = /^#[\da-fA-F]{6}$/.test(el.color.value) ? el.color.value : '#f36b35';
       const title = el.title.value.trim()
         ? '<div class="embed-title">' + escapeHtml(el.title.value.trim()) + '</div>'
         : '';
@@ -299,7 +299,7 @@
     el.destination.value = saved.channelId ?? '';
     el.format.value = saved.format ?? 'embed';
     el.title.value = saved.title ?? '';
-    el.color.value = saved.color ?? '#5865F2';
+    el.color.value = saved.color ?? '#F36B35';
     el.content.value = saved.content ?? '';
     draftVersion = data.version ?? 0;
     el.workspace.hidden = false;

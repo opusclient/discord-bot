@@ -58,7 +58,7 @@ export function createDictateWebSession(interaction) {
   sessions.set(hash, {
     guildId: interaction.guildId, userId: interaction.user.id,
     issuedAt: Date.now(), expiresAt: Date.now() + ttl, state: 'active',
-    draft: { channelId: '', format: 'embed', title: '', color: '#5865F2', content: '' },
+    draft: { channelId: '', format: 'embed', title: '', color: '#F36B35', content: '' },
     version: 0
   });
   return { url: baseUrl + '/dictate/#token=' + encodeURIComponent(token), expiresAt: Date.now() + ttl };
