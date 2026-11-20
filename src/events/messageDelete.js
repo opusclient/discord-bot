@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import { config } from '../config.js';
 import { logDeletedMessage } from '../services/auditlog.js';
+import { onProtectedLogMessageDeleted } from '../services/logIntegrity.js';
 
 export const name = Events.MessageDelete;
 
@@ -9,6 +10,7 @@ export const name = Events.MessageDelete;
 export async function execute(message, client) {
   if (!message?.guild || message.guild.id !== config.guildId) return;
   try {
+    if (await onProtectedLogMessageDeleted(message, client)) return;
     await logDeletedMessage(client, message);
   } catch (err) {
     console.error('[messageDelete] Failed to log the deleted message:', err);

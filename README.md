@@ -120,6 +120,7 @@ SQLite files, logs, runtime dumps, secrets and actual guild configuration are de
 | [Commands and features](docs/COMMANDS.md) | Slash command reference, logging, verification, invites and moderation |
 | [Ticket lifecycle](docs/TICKETS.md) | Permissions, claims, transcripts, support categories |
 | [Deployment and operations](docs/OPERATIONS.md) | Testing, backups, restarts, logs and troubleshooting |
+| [Log integrity and recovery](docs/LOG_INTEGRITY.md) | Administrator bypass limits, Owner exception, snapshots, restoration and evidence retention |
 | [Optional integrations](docs/INTEGRATIONS.md) | Signed account link and experimental integrations |
 
 ## Contributions and security

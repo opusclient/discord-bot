@@ -115,7 +115,7 @@ The bot does **not** send member message content to `audit-logs`. Ticket channel
 
 The legacy `blacklist-records` channel is no longer a write destination. Existing guild installations may archive it instead of deleting its history; `logChannels.blacklistChannelId` is retained as a legacy exclusion so changes inside a historical log channel are not mirrored as user message activity.
 
-The exact channel IDs are configured per installation. Discord Gateway data can omit deleted message content, so the bot records missing content or uncertain attribution explicitly instead of inventing it.
+The exact channel IDs are configured per installation. Discord Gateway data can omit deleted message content, so the bot records missing content or uncertain attribution explicitly instead of inventing it. For Owner-only deletion exceptions, local evidence snapshots and restored-message metadata, see [Log integrity and recovery](LOG_INTEGRITY.md).
 
 ## Invite attribution
 

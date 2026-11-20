@@ -5,11 +5,14 @@ import { handleDoNotType } from '../prefix/doNotType.js';
 import { processBoostSystemMessage } from '../services/boosts.js';
 import { isBoostSystemMessage } from '../services/boostFormat.js';
 import { cacheDeletedMessageMedia } from '../services/deletedMediaCache.js';
+import { onProtectedLogMessageCreated } from '../services/logIntegrity.js';
 
 export const name = Events.MessageCreate;
 
 export async function execute(message, client) {
   if (!message.guild || message.guild.id !== config.guildId) return;
+  void onProtectedLogMessageCreated(message).catch(error =>
+    console.error('[log-integrity] Message archival failed:', error.message));
   if (!message.author?.bot && message.channelId !== config.auditLogChannelId) {
     void cacheDeletedMessageMedia(message);
   }

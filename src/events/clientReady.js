@@ -18,6 +18,7 @@ import { reconcileStaffNicknames } from '../services/staffNicknames.js';
 import { reconcileAllRoleBranches } from '../services/roleBranchService.js';
 import { syncGuildSlashCommands } from '../services/slashSync.js';
 import { inviteTracker } from '../services/inviteTracker.js';
+import { initializeLogIntegrity, startLogIntegrityMonitoring } from '../services/logIntegrity.js';
 
 export const name = Events.ClientReady;
 export const once = true;
@@ -31,6 +32,9 @@ export async function execute(client) {
     status: 'online',
     activities: [{ name: 'Opus Client • Moderation', type: ActivityType.Watching }],
   });
+  void initializeLogIntegrity(client).catch(error =>
+    console.error('[log-integrity] Initialization failed:', error.message));
+  startLogIntegrityMonitoring(client);
   const inviteGuild = client.guilds.cache.get(config.guildId);
   if (inviteGuild) {
     await inviteTracker.initialize(inviteGuild)

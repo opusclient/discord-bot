@@ -5,6 +5,7 @@ import { deleteInstallMessage, getInstallMessage, getTicketByChannel, setInstall
 import { baseEmbed, truncate } from '../utils/embeds.js';
 import { getDeletedMessageMedia, clearDeletedMessageMedia } from './deletedMediaCache.js';
 import { sendMessageActivityLog } from './log.js';
+import { archiveLogMessage } from './logIntegrityStore.js';
 
 export const AUDIT_LOG_MESSAGE_KEY = 'audit_log';
 
@@ -151,7 +152,10 @@ export async function sendAuditLog(guild, embed, { content = null, files = [] } 
       guild.channels.cache.get(config.auditLogChannelId) ??
       (await guild.channels.fetch(config.auditLogChannelId).catch(() => null));
     if (!channel || !channel.isTextBased()) return null;
-    return await channel.send({ content, embeds: [embed], files, allowedMentions: { parse: [] } });
+    const sent = await channel.send({ content, embeds: [embed], files, allowedMentions: { parse: [] } });
+    await archiveLogMessage(sent).catch(error =>
+      console.error('[log-integrity] Audit message archival failed:', error.message));
+    return sent;
   } catch (err) {
     console.error('[auditlog] Failed to send audit log:', err.message);
     return null;

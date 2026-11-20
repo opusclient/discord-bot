@@ -5,6 +5,7 @@ import { purgeMessages, describePurge, buildPurgeLogEmbed, isPurgeBlockedChannel
 import { sendModLog } from '../services/log.js';
 import { errorEmbed, successEmbed } from '../utils/embeds.js';
 import { ensureModerator } from '../utils/permissions.js';
+import { isProtectedLogChannel } from '../services/logIntegrity.js';
 
 export const data = new SlashCommandBuilder()
   .setName('purge')
@@ -33,16 +34,18 @@ export async function execute(interaction) {
       embeds: [errorEmbed('The bot is missing the **Manage Messages** permission in this channel.')],
     });
   }
-  if (isPurgeBlockedChannel(channel.id)) {
+  if (isPurgeBlockedChannel(channel.id) ||
+      (isProtectedLogChannel(channel.id) && interaction.user.id !== interaction.guild.ownerId)) {
     return interaction.editReply({
-      embeds: [errorEmbed('The do-not-type trap channel keeps its messages as evidence - purge is disabled there.')],
+      embeds: [errorEmbed('Protected logs can only be deleted by the server owner. The evidence trap is also protected.')],
     });
   }
 
   const amount = interaction.options.getInteger('amount', true);
   const user = interaction.options.getUser('user');
 
-  const result = await purgeMessages(channel, { amount, targetUserId: user?.id ?? null }).catch((err) => {
+  const result = await purgeMessages(channel, { amount, targetUserId: user?.id ?? null,
+    ownerActorId: interaction.user.id === interaction.guild.ownerId ? interaction.user.id : null }).catch((err) => {
     console.error('[purge] Failed:', err.message);
     return null;
   });

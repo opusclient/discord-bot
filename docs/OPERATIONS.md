@@ -51,6 +51,7 @@ In production, run the bot under a supervisor such as systemd, a service manager
 - The Support Center panel has nine categories, a working select/modal and private action responses.
 - Role reconciliation preserves Staff/Development independence and the Discord Developer exception.
 - The bot can write to exactly four configured destinations: audit, moderation (including blacklist and member message edits/deletes), AutoMod and tickets.
+- Confirm the log integrity archive has adequate storage, current message snapshots and restricted filesystem permissions. See [Log integrity](LOG_INTEGRITY.md).
 - Invite tracking creates a snapshot; unambiguous new joins count correctly.
 - Ticket closures produce transcripts and do not lose open tickets if upload fails.
 

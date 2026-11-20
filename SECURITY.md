@@ -15,6 +15,7 @@ Runtime data can contain Discord account identifiers, moderation case history, t
 - Never commit `.env`, `config.json`, backups, logs, transcripts or production SQLite.
 - Do not grant the bot more Discord permissions than its enabled features require.
 - Protect the host, file permissions, SQLite database and log retention policy.
+- Protected log recovery captures moderation evidence and ticket transcripts locally. Restrict access to `data/log-integrity/` and back it up off-host. Native Discord Administrator bypass cannot be disabled with channel overwrites.
 - Signed account-link callbacks must authenticate the source and run behind a trusted network boundary.
 - Enable MFA on GitHub and Discord accounts that can deploy or administer the bot.
 

@@ -22,6 +22,7 @@ import {
   TextInputStyle,
 } from 'discord.js';
 import { config, updateFileConfig } from '../config.js';
+import { archiveLogMessage } from './logIntegrityStore.js';
 import { COLORS } from '../constants.js';
 import {
   closeTicketRow,
@@ -677,6 +678,11 @@ async function sendTicketLog(guild, { channel, ticket, member, note, transcript 
       embeds: [embed],
       files: transcript ? [transcript] : [],
       allowedMentions: { parse: [] },
+    })
+    .then(async sent => {
+      await archiveLogMessage(sent).catch(error =>
+        console.error('[log-integrity] Ticket transcript archival failed:', error.message));
+      return sent;
     })
     .catch((err) => {
       console.error('[tickets] Failed to post the ticket log entry:', err.message);

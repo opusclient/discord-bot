@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import { buildCaseEmbed } from '../utils/embeds.js';
+import { archiveLogMessage } from './logIntegrityStore.js';
 
 export async function sendChannelLog(guild, channelId, embed, { content = null, files = [], allowedMentions = { parse: [] } } = {}) {
   try {
@@ -10,12 +11,18 @@ export async function sendChannelLog(guild, channelId, embed, { content = null, 
       console.warn('[log] Log channel is missing or not text-based:', channelId);
       return null;
     }
-    return await channel.send({
+    const sent = await channel.send({
       content,
       embeds: [embed],
       files,
       allowedMentions
     });
+    if ([config.auditLogChannelId, config.modLogChannelId,
+      config.logChannels?.automodChannelId, config.tickets?.logChannelId].includes(channelId)) {
+      await archiveLogMessage(sent).catch(error =>
+        console.error('[log-integrity] Cannot archive outgoing log:', error.message));
+    }
+    return sent;
   } catch (error) {
     console.error('[log] Failed to write to channel', channelId, error.message);
     return null;

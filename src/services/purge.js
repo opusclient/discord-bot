@@ -7,6 +7,7 @@ import { PermissionsBitField } from 'discord.js';
 import { config } from '../config.js';
 import { COLORS } from '../constants.js';
 import { baseEmbed } from '../utils/embeds.js';
+import { authorizeOwnerLogRemoval, isProtectedLogChannel } from './logIntegrity.js';
 
 // ---------- Server-wide user purge (do-not-type kick follow-up) ----------
 
@@ -55,7 +56,7 @@ export async function purgeRecentMessages(guild, userId, { windowMs = 30 * 60 * 
   const windowStart = Date.now() - windowMs;
   const me = guild.members.me;
 
-  const main = guild.channels.cache.filter((c) => usableChannel(c, me) && !c.isThread());
+  const main = guild.channels.cache.filter((c) => usableChannel(c, me) && !c.isThread() && !isProtectedLogChannel(c.id));
 
   // Include active threads (text/forum parents) so nothing is missed.
   const threads = [];
@@ -103,7 +104,13 @@ const BULK_CHUNK = 100; // Discord API hard cap per bulk-delete call
 // removed; messages older than 14 days are skipped (the API rejects them).
 // Returns { deleted, requested, ranOut } - ranOut means the start of the channel was
 // reached (or nothing else matched within the age limit), so `deleted` may be lower.
-export async function purgeMessages(channel, { amount, targetUserId = null } = {}) {
+export async function purgeMessages(channel, {
+  amount, targetUserId = null, ownerActorId = null
+} = {}) {
+  if (isProtectedLogChannel(channel.id) &&
+      (!ownerActorId || ownerActorId !== channel.guild?.ownerId)) {
+    throw new Error('Protected log channels can only be purged by the server owner.');
+  }
   const requested = Math.min(Math.max(1, Math.floor(Number(amount))), 1000);
   let remaining = requested;
   let deleted = 0;
@@ -131,6 +138,9 @@ export async function purgeMessages(channel, { amount, targetUserId = null } = {
     }
 
     if (batch.length) {
+      if (isProtectedLogChannel(channel.id)) {
+        authorizeOwnerLogRemoval(channel.id, batch.map(message => message.id), ownerActorId);
+      }
       const removed = await channel.bulkDelete(batch, true).catch((err) => {
         console.error('[purge] Bulk delete failed:', err.message);
         return null;

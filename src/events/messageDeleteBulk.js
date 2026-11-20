@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import { config } from '../config.js';
 import { logBulkDeleted } from '../services/auditlog.js';
+import { onProtectedLogBulkDeleted } from '../services/logIntegrity.js';
 
 export const name = Events.MessageBulkDelete;
 
@@ -10,6 +11,7 @@ export const name = Events.MessageBulkDelete;
 export async function execute(messages, channel, client) {
   if (!channel?.guild || channel.guild.id !== config.guildId) return;
   try {
+    if (await onProtectedLogBulkDeleted(messages, channel, client)) return;
     await logBulkDeleted(client, channel, messages);
   } catch (err) {
     console.error('[messageDeleteBulk] Failed to log the bulk delete:', err);
