@@ -27,3 +27,9 @@ test('module runtime and legacy command imports match', async () => {
 test('unowned command names are rejected', () => {
   assert.throws(() => resolveModuleCommandPath('unknown-command'), /Unassigned/);
 });
+
+test('OAI module facade loads without importing unfinished implementations', async () => {
+  const api = await import('../src/modules/oai/api.js');
+  assert.equal(typeof api.loadAuthorityDecisions, 'function');
+  assert.equal(typeof api.loadRoleIntegrity, 'function');
+});

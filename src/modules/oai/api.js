@@ -1,2 +1,7 @@
-export * as authorityDecisions from '../../services/authorityDecisions.js';
-export * as roleIntegrity from '../../services/roleIntegrity.js';
+export async function loadAuthorityDecisions() {
+  return import('../../services/authorityDecisions.js');
+}
+
+export async function loadRoleIntegrity() {
+  return import('../../services/roleIntegrity.js');
+}

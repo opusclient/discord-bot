@@ -89,3 +89,5 @@ The OAI implementation is actively being developed in the existing authorityDeci
 ## Migration status
 
 The module folders, command ownership registry and grouped command implementations are operational. OAI and Management have distinct module contracts and documentation. Existing service implementations and Gateway event handlers are still kept in their historical directories until they can be migrated safely. This staged approach intentionally preserves concurrent uncommitted OAI work.
+
+OAI integration note: the OAI API facade uses deferred imports while its authority service implementations remain uncommitted. A clean checkout can load the module catalog without resolving unavailable in-progress files. The OAI service implementations must be reviewed and merged before consumers use those API loaders.
