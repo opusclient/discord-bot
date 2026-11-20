@@ -38,6 +38,6 @@ The codebase includes an optional, separately controlled pairing/session bridge 
 - The source of client-submitted events is not independently authenticated to a third-party game; do not present client-reported identity data as confirmed platform evidence.
 - Keep the bridge disabled unless you have deployed and secured the associated client/service.
 - Do not expose the listener publicly without TLS termination, request limits, rate limiting and access control.
-- Some integration routes may not have a dedicated public slash command; the authoritative supported command set is `src/commands/`.
+- Some integration routes may not have a dedicated public slash command; the authoritative command registry is src/modules/registry.js.
 
 This public repository intentionally omits original private hosting scripts and infrastructure routes. Other applications that interact with Opus System are not part of this Discord bot release.

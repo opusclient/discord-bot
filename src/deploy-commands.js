@@ -3,12 +3,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { assertConfig, config } from './config.js';
-import { loadCommands } from './utils/loaders.js';
+import { loadModuleCommands } from './modules/registry.js';
 
 assertConfig({requireGuild:true});
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const commands = await loadCommands(path.join(root,'commands'),new Map());
+const commands = await loadModuleCommands(new Map());
 const desired = [...commands.values()].map(command => command.data.toJSON());
 const rest = new REST({version:'10'}).setToken(config.token);
 

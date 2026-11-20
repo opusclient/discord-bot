@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { MessageFlags, ApplicationCommandOptionType } from 'discord.js';
 import { loadCommands } from '../src/utils/loaders.js';
+import { validateModuleCatalog } from '../src/modules/registry.js';
 import { visibilityFlags, installHideOption } from '../src/utils/visibility.js';
 import { buildHelpPanel, helpPanelId, parseHelpPanelId } from '../src/services/helpPanel.js';
 
 const commands = await loadCommands(path.resolve('src/commands'), new Map());
 const memberId = '1900000000000000001';
 
-test('all 25 slash commands have optional hide on every route', () => {
-  assert.equal(commands.size, 25);
+test('all registered slash commands have optional hide on every route', () => {
+  assert.equal(commands.size, validateModuleCatalog().commandCount);
   for (const [name, mod] of commands) {
     const data = mod.data.toJSON();
     const subs = data.options?.filter(option => option.type === ApplicationCommandOptionType.Subcommand) ?? [];

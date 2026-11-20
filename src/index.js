@@ -2,7 +2,8 @@ import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertConfig, config } from './config.js';
-import { loadCommands, loadEvents } from './utils/loaders.js';
+import { loadEvents } from './utils/loaders.js';
+import { loadModuleCommands } from './modules/registry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,7 +24,7 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-await loadCommands(path.join(__dirname, 'commands'), client.commands);
+await loadModuleCommands(client.commands);
 await loadEvents(client, path.join(__dirname, 'events'));
 
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err));

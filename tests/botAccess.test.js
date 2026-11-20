@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { config } from '../src/config.js';
+import { resolveModuleCommandPath } from '../src/modules/registry.js';
 import { isBotController, ensureBotController } from '../src/utils/permissions.js';
 
 const id = '1900000000000000047';
@@ -60,11 +61,13 @@ test('bot operations have explicit bot-control gates without broad moderation gr
     'ticket-actions/permanentRoleRemove.js'
   ];
   for (const file of files) {
-    const code = readFileSync(join('src', file), 'utf8');
+    const code = readFileSync(file.startsWith('commands/')
+      ? resolveModuleCommandPath(file.slice(9, -3)) : join('src', file), 'utf8');
     assert.match(code, /ensureBotController\(interaction\)/, file);
   }
   for (const file of ['commands/ban.js', 'commands/blacklist.js', 'commands/role.js', 'commands/demote.js']) {
-    const code = readFileSync(join('src', file), 'utf8');
+    const code = readFileSync(file.startsWith('commands/')
+      ? resolveModuleCommandPath(file.slice(9, -3)) : join('src', file), 'utf8');
     assert.doesNotMatch(code, /ensureBotController\(interaction\)/, file);
   }
 });

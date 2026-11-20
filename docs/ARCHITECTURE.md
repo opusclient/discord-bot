@@ -4,23 +4,28 @@ Opus System is a **single Discord bot process** written with `discord.js` and Ja
 
 ## Boundaries
 
-```text
+~~~text
 Discord Guild / Gateway
-        │
-        ▼
+        |
+        v
   src/index.js
-        │
-        ├── src/events/                 Event handlers
-        ├── src/commands/               Slash commands
-        │       │
-        │       └── src/services/       Authorization and business logic
-        │               │
-        │               ▼
-        │           src/db.js           SQLite
-        │
-        ├── src/ticket-actions/         Ticket-specific handlers
-        └── src/deploy-commands.js      Guild command registry
-```
+        |
+        +-- src/events/                  Gateway adapters
+        +-- src/modules/registry.js      Feature and command ownership
+        |       +-- oai                   Authority integrity
+        |       +-- management            Staff/Dev branches
+        |       +-- moderation            Cases and enforcement
+        |       +-- verification          Member onboarding
+        |       +-- tickets               Support
+        |       +-- community             Member services
+        |       +-- communications        Dictate/editor
+        |       +-- observability         Audit and logs
+        |       +-- integrations          External bridges
+        |       +-- operations            Setup and runtime
+        +-- src/services/                Domain implementations
+        +-- src/db.js                    SQLite
+        +-- src/deploy-commands.js       Command registration
+~~~
 
 The bot is deliberately **not the owner of the entire server layout**. When `serverManagedByOpusManager` is enabled, the separate **Opus Manager** application controls static roles, category order, default channel permissions and fixed channels. Opus System handles dynamic roles and interactions, temporary support and voice channels, status messages and moderation.
 
@@ -29,10 +34,12 @@ The bot is deliberately **not the owner of the entire server layout**. When `ser
 1. Load `.env` and `config.json` through `src/config.js`.
 2. Initialize the SQLite database in `src/db.js` and feature-specific tables.
 3. Construct the Discord client with the required Gateway intents.
-4. Register command handlers from `src/commands/` and event handlers from `src/events/`.
+4. Load commands through the module ownership registry and event handlers from the existing Gateway adapters.
 5. On `ClientReady`, initialize periodic work, check the guild slash command registry, reconcile team roles, prepare invite tracking and refresh applicable panels.
 
 The event implementations are intentionally separate so a failed moderation notification should not silently invalidate the actual punishment or role operation.
+
+See [Module architecture](MODULES.md) for domain boundaries and migration status.
 
 ## Data and responsibilities
 

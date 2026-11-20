@@ -82,4 +82,4 @@ These are operational controls, not normal member features. Their behavior respe
 - The `/help` interface is a discovery aid, **not** an authorization boundary.
 - Punishment case details and reason visibility may be further restricted to staff or private output.
 
-The source files in `src/commands/` are the authoritative definition of actual argument names and validation behavior.
+The module command implementations under src/modules are authoritative; src/commands remains a compatibility entry point. See [Modules](MODULES.md).

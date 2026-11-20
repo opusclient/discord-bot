@@ -2,7 +2,7 @@
 
 **Official Discord bot for the Opus Client community.**
 
-[Website](https://opusclient.com) · [Getting started](docs/SETUP.md) · [Team permissions](docs/PERMISSIONS.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md)
+[Website](https://opusclient.com) · [Getting started](docs/SETUP.md) · [Team permissions](docs/PERMISSIONS.md) · [Architecture](docs/ARCHITECTURE.md) · [Modules](docs/MODULES.md) · [Security](SECURITY.md)
 
 Opus System handles Discord moderation, support tickets, staff and developer permissions, verification, community events and audit trails. The application is called **Opus System**; this repository is named **discord-bot** to reflect its scope.
 
@@ -20,7 +20,7 @@ Opus System handles Discord moderation, support tickets, staff and developer per
 | Community | Invite attribution, boost notifications, welcome messages, user profiles, temporary voice channels |
 | Operations | Guild-scoped slash commands, live command sync, restart and setup controls, SQLite persistence |
 
-All **24 slash commands** are registered to the configured Discord guild. Responses are public by default; use **`hide: Yes`** when a command offers that option and a private response is preferred. Buttons and menus that handle private account or ticket details can remain ephemeral independently.
+All **26 slash commands** are registered to the configured Discord guild. Responses are public by default; use **`hide: Yes`** when a command offers that option and a private response is preferred. Buttons and menus that handle private account or ticket details can remain ephemeral independently.
 
 ## Quick start
 
@@ -91,7 +91,8 @@ The public ticket panel uses **two compact Discord embeds**, one for ticket acti
 
 ```text
 src/
-  commands/       Guild slash commands
+  modules/        Feature-owned implementations and command registry
+  commands/       Compatibility entry points
   events/         Discord Gateway event handlers
   services/       Business logic, permissions, tickets and automation
   ticket-actions/ Ticket operation handlers
@@ -124,6 +125,7 @@ See [Dictate web editor](docs/DICTATE_EDITOR.md) for hosting and security.
 | --- | --- |
 | [Setup and configuration](docs/SETUP.md) | Discord application, intents, `.env`, IDs and startup |
 | [Architecture](docs/ARCHITECTURE.md) | Component boundaries, Gateway events, persistence and command sync |
+| [Module architecture](docs/MODULES.md) | OAI, Management and other feature clusters, ownership and migration |
 | [Role and permission system](docs/PERMISSIONS.md) | Staff/Dev hierarchy, Discord Developer, Manager, access roles and self-management |
 | [Commands and features](docs/COMMANDS.md) | Slash command reference, logging, verification, invites and moderation |
 | [Ticket lifecycle](docs/TICKETS.md) | Permissions, claims, transcripts, support categories |
