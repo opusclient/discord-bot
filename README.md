@@ -110,6 +110,14 @@ docs/             Operational and technical documentation
 
 SQLite files, logs, runtime dumps, secrets and actual guild configuration are deliberately excluded from version control. This repository starts from a new **sanitized public history** and does not include historical production snapshots.
 
+## Dictate web editor
+
+Use `/dictate` (Founder, Manager, Adminstrator) to open a private, one-time web editor. Compose an embed or text message, select the destination, insert user/role/channel mentions **at the cursor**, review the Discord-like preview, then confirm Publish. The bot sends the message only after rechecking authorization and channel access.
+
+Configure `DICTATE_EDITOR_PUBLIC_URL` as the HTTPS origin exposing the built-in server at `127.0.0.1:8791`. When no public URL is configured, the legacy Discord Modal remains available.
+
+See [Dictate web editor](docs/DICTATE_EDITOR.md) for hosting and security.
+
 ## Documentation
 
 | Document | Purpose |

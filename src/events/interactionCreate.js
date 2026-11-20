@@ -5,6 +5,7 @@ import { isConfiguredGuild } from '../utils/permissions.js';
 import { buildHelpPanel, parseHelpPanelId } from '../services/helpPanel.js';
 import { canViewStaffHelp } from '../commands/help.js';
 import { visibilityFlags } from '../utils/visibility.js';
+import { handleDictateInteraction } from '../services/dictate.js';
 import { TICKET_BUTTON_ID, TICKET_CLOSE_BUTTON_ID, TICKET_CLAIM_BUTTON_ID, TICKET_SELECT_ID, TICKET_PANEL_ACTIONS, buildTicketPanelActionPayload, TICKET_PURPOSE_MODAL_ID, TICKET_PURPOSE_INPUT_ID, TICKET_TYPES, buildTicketPurposeModal, claimTicket, canManageTicket, closeTicket, getTicketForChannel, openTicket, parseTicketButtonType, parseTicketModalType } from '../services/tickets.js';
 import { VERIFY_BUTTON_ID, sweepVerifyPings, verifyMember } from '../services/verify.js';
 import { SELF_ROLE_BUTTON_PREFIX, sendSelfRolePing, toggleSelfRole } from '../services/selfroles.js';
@@ -76,6 +77,9 @@ export async function execute(interaction, client) {
     }
     return;
   }
+
+  if ((interaction.isButton() || interaction.isModalSubmit?.()) &&
+      await handleDictateInteraction(interaction)) return;
 
   if (interaction.isButton()) {
     const help = parseHelpPanelId(interaction.customId);

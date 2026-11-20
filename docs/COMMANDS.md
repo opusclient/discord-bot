@@ -1,6 +1,6 @@
 # Commands and features
 
-Opus System registers **24 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
+Opus System registers **25 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
 
 ## General and community
 
@@ -11,6 +11,14 @@ Opus System registers **24 guild-scoped slash commands**. The table below groups
 | `/invites [user]` | Verified invite attribution: total invited, still in guild, left and currently active links |
 
 Invite tracking only credits a new join when the invite-use difference is unambiguous. It does not reconstruct member joins from a link's historical usage count.
+
+## Announcements
+
+| Command | Purpose |
+| --- | --- |
+| `/dictate` | Private HTTPS editor with live preview and cursor-positioned user, role and channel mentions; one-time Publish after a permission re-check |
+
+Access: Founder, Manager and Adminstrator; other team ranks are not automatically authorized. See [Dictate web editor](DICTATE_EDITOR.md).
 
 ## Tickets
 

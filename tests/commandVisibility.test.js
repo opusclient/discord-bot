@@ -9,8 +9,8 @@ import { buildHelpPanel, helpPanelId, parseHelpPanelId } from '../src/services/h
 const commands = await loadCommands(path.resolve('src/commands'), new Map());
 const memberId = '1900000000000000001';
 
-test('all 24 slash commands have optional hide on every route', () => {
-  assert.equal(commands.size, 24);
+test('all 25 slash commands have optional hide on every route', () => {
+  assert.equal(commands.size, 25);
   for (const [name, mod] of commands) {
     const data = mod.data.toJSON();
     const subs = data.options?.filter(option => option.type === ApplicationCommandOptionType.Subcommand) ?? [];

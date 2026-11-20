@@ -76,3 +76,9 @@ In production, run the bot under a supervisor such as systemd, a service manager
 ## Release safety
 
 Before publishing a public release, inspect the entire **Git history**, not only the current working tree, for accidentally committed secrets or private data. Rotate any exposed tokens; deleting a secret from the latest commit alone is not sufficient.
+
+## Dictate web editor
+
+The web editor is served by the main bot process on localhost and depends on an HTTPS proxy/tunnel plus `DICTATE_EDITOR_PUBLIC_URL`. If the proxy is unreachable, existing Discord Modal editing remains the fallback when no URL is configured. A link already issued cannot be reused after Publish, expiry or bot restart.
+
+Test `GET /dictate/` through HTTPS; it should return 200. `GET /dictate/api/session` without an authorization bearer should return 401. Validate mentions with a non-production channel before using live announcements. See [Dictate web editor](DICTATE_EDITOR.md).

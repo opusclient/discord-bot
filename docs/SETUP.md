@@ -127,7 +127,7 @@ npm start
 
 `npm test` uses synthetic IDs and does **not** need a Discord token.
 
-`npm run deploy -- --check` reads the configured guild command registry without changing it. `npm run deploy` registers the **24 guild commands**, removes obsolete guild commands and checks registration. The bot also reconciles command changes at startup.
+`npm run deploy -- --check` reads the configured guild command registry without changing it. `npm run deploy` registers the **25 guild commands**, removes obsolete guild commands and checks registration. The bot also reconciles command changes at startup.
 
 The bot uses **slash commands**. An old prefix-support module may exist in the source for compatibility but prefix commands are not an alternative public command interface.
 
@@ -141,3 +141,11 @@ The bot uses **slash commands**. An old prefix-support module may exist in the s
 - Review configured log channels and Discord permissions before inviting ordinary users.
 
 For upgrades and backups, see [OPERATIONS.md](OPERATIONS.md).
+
+## Dictate web editor
+
+The built-in web server listens on `127.0.0.1:8791` by default. Set `DICTATE_EDITOR_PORT` to change the internal port and publish it through an HTTPS reverse proxy or Cloudflare Tunnel. Set `DICTATE_EDITOR_PUBLIC_URL=https://editor.example.com` using only the HTTPS origin, with no trailing path.
+
+`/dictate` replies privately with a one-use editor link containing a 15-minute bearer token in the URL fragment. The token is removed from browser address history immediately. The backend accepts same-origin authenticated API requests and rechecks Discord staff/channel permissions when publishing. If no secure public URL is available, `/dictate` uses the original Discord Modal.
+
+Never point the public URL at the local HTTP port directly. Do not expose the internal port on `0.0.0.0`. See [Dictate web editor](DICTATE_EDITOR.md).

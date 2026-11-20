@@ -18,8 +18,8 @@ const commands = await loadCommands(path.resolve('src/commands'), new Map());
 const definitions = [...commands.values()].map(command => command.data.toJSON());
 const toCollection = rows => new Map(rows.map(row => [row.name, { toJSON: () => row }]));
 
-test('all 24 operational slash commands have handlers and valid definitions', () => {
-  assert.equal(commands.size, 24);
+test('all 25 operational slash commands have handlers and valid definitions', () => {
+  assert.equal(commands.size, 25);
   for (const name of ['ticket', 'help', 'info', 'invites', 'claim', 'unclaim', 'punishments', 'warning', 'blacklist', 'role', 'promote', 'demote', 'install', 'setup', 'mute', 'ban']) {
     assert.ok(commands.has(name));
     assert.equal(typeof commands.get(name).execute, 'function');
@@ -93,7 +93,7 @@ test('startup sync changes only out-of-date guild commands and re-verifies', asy
   const client = { guilds: { cache: new Map([[config.guildId, guild]]) }, commands };
   const first = await syncGuildSlashCommands(client);
   assert.equal(first.changed, true);
-  assert.equal(first.count, 24);
+  assert.equal(first.count, 25);
   assert.equal(changes, 1);
   const second = await syncGuildSlashCommands(client);
   assert.equal(second.changed, false);
