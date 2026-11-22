@@ -7,7 +7,7 @@ import { execute as eventHandler, isTicketAuditEntry } from '../src/events/guild
 import { execute as automodHandler } from '../src/events/autoModerationActionExecution.js';
 import { sendAutoModLog, sendBlacklistLog, logCase } from '../src/services/log.js';
 
-const botId='1900000000000000018';
+const botId='1567863507775397908';
 const actor='123456789012345677';
 const target='123456789012345678';
 let counter=0;

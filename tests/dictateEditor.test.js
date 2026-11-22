@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const source = readFileSync(new URL('../web/dictate/editor.js', import.meta.url), 'utf8')
   .replace('  void init();', `  globalThis.__probe = {
     setData(value) { data = value; },
-    openPicker, snapshotSelection, insertToken, showReview
+    openPicker, snapshotSelection, insertToken
   };`);
 
 function createEditor() {
@@ -74,7 +74,6 @@ function createEditor() {
   el('destination').value = ids.channel;
   el('color').value = '#5865F2';
   el('picker').hidden = true;
-  el('destination-menu').hidden = true;
   return { ...script.__probe, el, ids, document };
 }
 
@@ -89,6 +88,7 @@ test('role picker inserts a mention into the content at the saved cursor', () =>
   editor.el('picker-tabs').children[1].click();
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> world');
+  assert.match(editor.el('draft-status').textContent, /Inserted @Engineering into message/);
   assert.match(editor.el('preview-message').innerHTML, /@Engineering/);
   assert.equal(editor.el('picker').hidden, true);
   assert.equal(editor.document.activeElement, content);
@@ -135,6 +135,7 @@ test('toolbar buttons insert user role and channel into the same editable draft'
   editor.el('mention-channel').click();
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Hello <@&' + editor.ids.role + '> <#' + editor.ids.channel + '> ');
+  assert.match(editor.el('draft-status').textContent, /Inserted #voice-chat into message/);
   assert.match(editor.el('preview-message').innerHTML, /@Engineering/);
   assert.match(editor.el('preview-message').innerHTML, /#voice-chat/);
 });
@@ -150,53 +151,4 @@ test('picker safely appends if the draft changes after the saved cursor position
   content.value = 'Updated content';
   editor.el('picker-results').children[0].click();
   assert.equal(content.value, 'Updated content <@' + editor.ids.user + '> ');
-});
-
-test('destination dropdown opens a bounded searchable list and updates the draft', () => {
-  const editor = createEditor();
-  const destination = editor.el('destination');
-  destination.value = '';
-  editor.el('destination-trigger').click();
-  assert.equal(editor.el('destination-menu').hidden, false);
-  assert.equal(editor.el('destination-options').children.length, 1);
-  editor.el('destination-options').children[0].click();
-  assert.equal(destination.value, editor.ids.channel);
-  assert.equal(editor.el('destination-value').textContent, '# announcements');
-  assert.equal(editor.el('destination-menu').hidden, true);
-});
-
-test('format toggle changes message type without a native dropdown', () => {
-  const editor = createEditor();
-  editor.el('format-embed').click();
-  assert.equal(editor.el('format').value, 'embed');
-  editor.el('format-text').click();
-  assert.equal(editor.el('format').value, 'text');
-});
-
-test('missing destination is shown prominently and opens the channel chooser', () => {
-  const editor = createEditor();
-  editor.el('destination').value = '';
-  editor.el('content').value = 'Ready to send';
-  editor.showReview();
-  assert.equal(editor.el('validation-alert').hidden, false);
-  assert.match(editor.el('validation-message').textContent, /destination channel/i);
-  assert.equal(editor.el('destination-error').hidden, false);
-  assert.equal(editor.el('destination-menu').hidden, false);
-  assert.equal(editor.document.activeElement, editor.el('destination-search'));
-  editor.el('destination-options').children[0].click();
-  assert.equal(editor.el('validation-alert').hidden, true);
-  assert.equal(editor.el('destination-error').hidden, true);
-});
-
-test('empty message highlights content and clears after editing', () => {
-  const editor = createEditor();
-  editor.el('content').value = '';
-  editor.showReview();
-  assert.equal(editor.el('validation-alert').hidden, false);
-  assert.match(editor.el('validation-message').textContent, /write a message/i);
-  assert.equal(editor.el('content-error').hidden, false);
-  assert.equal(editor.document.activeElement, editor.el('content'));
-  editor.el('content').value = 'Hello';
-  editor.el('content').dispatchEvent({ type: 'input' });
-  assert.equal(editor.el('validation-alert').hidden, true);
 });

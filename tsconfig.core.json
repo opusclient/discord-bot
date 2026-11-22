@@ -1,0 +1,41 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noCheck": false,
+    "strict": true,
+    "noEmit": true
+  },
+  "files": [
+    "src/config.ts",
+    "src/index.ts",
+    "src/utils/loaders.ts",
+    "src/utils/visibility.ts",
+    "src/utils/duration.ts",
+    "src/utils/credit.ts",
+    "src/services/boostFormat.ts",
+    "src/utils/embeds.ts",
+    "src/constants.ts",
+    "src/deploy-commands.ts",
+    "src/db.ts",
+    "src/services/customRoles.ts",
+    "src/services/authorityDecisions.ts",
+    "src/services/roleIntegrity.ts",
+    "src/services/roleBranchPolicy.ts",
+    "src/services/teamManagement.ts",
+    "src/services/roleBranchService.ts",
+    "src/utils/permissions.ts",
+    "src/utils/paginate.ts",
+    "src/services/roleEmbeds.ts",
+    "src/services/logIntegrityStore.ts",
+    "src/services/logIntegrity.ts",
+    "src/services/tickets.ts",
+    "src/services/dictateWeb.ts",
+    "src/services/log.ts",
+    "src/services/dictate.ts",
+    "src/services/auditlog.ts",
+    "src/services/deletedMediaCache.ts",
+    "src/services/overlayBridge.ts"
+  ],
+  "include": [],
+  "exclude": []
+}

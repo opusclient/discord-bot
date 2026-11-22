@@ -3,7 +3,7 @@ import test from 'node:test';
 import { MessageType } from 'discord.js';
 import { buildBoostEmbed, isBoostSystemMessage, parseDiscordBoostCount } from '../src/services/boostFormat.js';
 
-const channelId = '1900000000000000044';
+const channelId = '1571921382898536558';
 
 test('recognizes native Discord boost messages only in the configured channel', () => {
   for(const type of [MessageType.GuildBoost,MessageType.GuildBoostTier1,MessageType.GuildBoostTier2,MessageType.GuildBoostTier3]){
@@ -22,8 +22,8 @@ test('counts are only read from numeric Discord notices',()=>{
 });
 
 test('historical acknowledgement does not invent per-member boost counts',()=>{
-  const embed=buildBoostEmbed({guildName:'Opus Client',userId:'1900000000000000001',historical:true,premiumSince:1794844636714,totalBoosts:3}).toJSON();
-  assert.match(embed.description,/<@1900000000000000001>/);
+  const embed=buildBoostEmbed({guildName:'Opus Client',userId:'1320303839701897230',historical:true,premiumSince:1794844636714,totalBoosts:3}).toJSON();
+  assert.match(embed.description,/<@1320303839701897230>/);
   assert.ok(embed.fields.some(f=>f.name==='Current Server Boosts'&&f.value==='3'));
   assert.ok(!embed.fields.some(f=>f.name.includes('Discord Notice')));
   assert.equal(embed.title,'Thank You for Boosting Our Discord Server!');

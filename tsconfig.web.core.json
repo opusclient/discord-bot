@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.web.json",
+  "compilerOptions": {
+    "noCheck": false,
+    "strict": true,
+    "noEmit": true
+  },
+  "files": [
+    "web/dictate/bootstrap.ts"
+  ],
+  "include": []
+}

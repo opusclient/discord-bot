@@ -119,15 +119,15 @@ Grant only necessary permissions for your server. For most servers, a separate m
 ## 5. Test and register
 
 ```bash
-npm test
+npm run verify
 npm run deploy -- --check
-npm run deploy
-npm start
+OPUS_TS_ALLOW_COMMAND_DEPLOY=1 npm run deploy
+OPUS_TS_CUTOVER=1 npm start
 ```
 
-`npm test` uses synthetic IDs and does **not** need a Discord token.
+`npm run verify` uses synthetic IDs and does **not** need a Discord token.
 
-`npm run deploy -- --check` reads the configured guild command registry without changing it. `npm run deploy` registers the **25 guild commands**, removes obsolete guild commands and checks registration. The bot also reconciles command changes at startup.
+`npm run deploy -- --check` reads the configured guild command registry without changing it. `OPUS_TS_ALLOW_COMMAND_DEPLOY=1 npm run deploy` registers the **27 guild commands**, removes obsolete guild commands and checks registration. The bot also reconciles command changes at startup.
 
 The bot uses **slash commands**. An old prefix-support module may exist in the source for compatibility but prefix commands are not an alternative public command interface.
 

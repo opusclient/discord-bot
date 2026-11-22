@@ -18,8 +18,8 @@ const policy = config.roleBranches;
 const [founder, manager, admin, moderator, support] = policy.staff;
 const [principal, developer] = policy.development;
 const [backend, frontend, discord] = policy.specialties;
-const tester = '1900000000000000021';
-const artist = '1900000000000000039';
+const tester = '1567868641255624734';
+const artist = '1568123522637766657';
 const verified = config.verifiedRoleId;
 const linked = config.linkedRoleId;
 
@@ -462,7 +462,7 @@ test('Manager requires Development Management delegation for Development operati
   same(user.member.roles.cache.keys(), [principal, verified]);
 });
 
-test('Only Founder or Manager can assign delegated management roles and neither can self-assign', async () => {
+test('Founder alone may grant Development Management and Manager cannot self-delegate', async () => {
   const staffManagement = getRole(config.staffManagementRoleId);
   const devManagement = getRole(config.developmentManagementRoleId);
   const adminUser = makeMember(ids.first, [admin, verified]);
@@ -491,7 +491,7 @@ test('Only Founder or Manager can assign delegated management roles and neither 
   own.interaction.member.roles.cache = new Map([[manager, getRole(manager)]]);
   own.interaction.member.roles.highest = getRole(manager);
   await executeRoleOperation(own.interaction, 'add');
-  assert.match(JSON.stringify(own.changes.at(-1)[1]), /management delegation/);
+  assert.match(JSON.stringify(own.changes.at(-1)[1]), /Only Founder/);
 });
 
 test('Staff delegation is revoked in the same atomic update when an Adminstrator is demoted', async () => {

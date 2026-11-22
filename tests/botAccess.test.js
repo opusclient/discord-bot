@@ -3,11 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { config } from '../src/config.js';
-import { resolveModuleCommandPath } from '../src/modules/registry.js';
 import { isBotController, ensureBotController } from '../src/utils/permissions.js';
 
-const id = '1900000000000000047';
-const principal = '1900000000000000048';
+const [id, principal] = config.botControlRoleIds;
 
 function member(roles = [], permissions = false) {
   return {
@@ -20,8 +18,8 @@ test('Discord Developer receives bot control but backend and frontend do not', (
   assert.deepEqual(config.botControlRoleIds, [id, principal]);
   assert.equal(isBotController(member([principal])), true);
   assert.equal(isBotController(member([id])), true);
-  assert.equal(isBotController(member(['1900000000000000045'])), false);
-  assert.equal(isBotController(member(['1900000000000000046'])), false);
+  assert.equal(isBotController(member(['1572860357888835644'])), false);
+  assert.equal(isBotController(member(['1572860749423050764'])), false);
   assert.equal(isBotController(member([])), false);
   assert.equal(isBotController({ roles: [id] }), true);
 });
@@ -40,7 +38,7 @@ test('bot controller works with no Manage Server permission and is guild scoped'
   assert.equal(allowed.replies.length, 0);
   const engineer = make(config.guildId, [principal]);
   assert.equal(await ensureBotController(engineer), true);
-  const denied = make(config.guildId, ['1900000000000000045']);
+  const denied = make(config.guildId, ['1572860357888835644']);
   assert.equal(await ensureBotController(denied), false);
   assert.equal(denied.replies.length, 1);
   const regularModerator = make(config.guildId, [config.modRoleId]);
@@ -61,13 +59,11 @@ test('bot operations have explicit bot-control gates without broad moderation gr
     'ticket-actions/permanentRoleRemove.js'
   ];
   for (const file of files) {
-    const code = readFileSync(file.startsWith('commands/')
-      ? resolveModuleCommandPath(file.slice(9, -3)) : join('src', file), 'utf8');
+    const code = readFileSync(join('src', file), 'utf8');
     assert.match(code, /ensureBotController\(interaction\)/, file);
   }
   for (const file of ['commands/ban.js', 'commands/blacklist.js', 'commands/role.js', 'commands/demote.js']) {
-    const code = readFileSync(file.startsWith('commands/')
-      ? resolveModuleCommandPath(file.slice(9, -3)) : join('src', file), 'utf8');
+    const code = readFileSync(join('src', file), 'utf8');
     assert.doesNotMatch(code, /ensureBotController\(interaction\)/, file);
   }
 });

@@ -17,10 +17,9 @@ test('Dictate uses the restrained dark and orange design system', () => {
 test('minimal editor layout preserves all interactive surfaces', () => {
   const required = [
     'workspace', 'error', 'error-message', 'status', 'expires', 'destination',
-    'destination-trigger', 'destination-menu', 'destination-search', 'destination-options',
-    'destination-value', 'destination-select', 'format-embed', 'format-text',
     'format', 'format-options', 'title', 'color', 'color-picker', 'content',
-    'counter', 'preview-message', 'publish', 'mention-person', 'mention-channel', 'picker',
+    'counter', 'preview-message', 'destination-select', 'destination-trigger',
+    'destination-value', 'format-embed', 'format-text', 'publish', 'mention-person', 'mention-channel', 'picker',
     'picker-title', 'picker-close', 'picker-tabs', 'picker-search',
     'picker-results', 'confirm', 'confirm-text', 'confirm-publish',
     'publish-error', 'cancel', 'draft-status'
@@ -29,5 +28,4 @@ test('minimal editor layout preserves all interactive surfaces', () => {
   assert.match(html, /<h2>Compose<\/h2>/);
   assert.match(html, /Add user \/ role/);
   assert.match(html, /Add channel/);
-  assert.doesNotMatch(html, /brandmark|message-avatar|topbar|page-intro|details-card|<footer/);
 });

@@ -8,7 +8,7 @@ const createGuild = icon => ({
   iconURL: () => icon,
   channels: {
     cache: new Collection([
-      ['rules', { id: '1900000000000000006', name: 'rules' }],
+      ['rules', { id: '1566418277423513670', name: 'rules' }],
     ]),
   },
 });
@@ -24,7 +24,7 @@ test('verification panel uses Components V2 with a single prominent action', () 
   assert.equal(button.custom_id, VERIFY_BUTTON_ID);
   assert.equal(button.style, ButtonStyle.Primary);
   assert.equal(button.label, 'Verify & Continue');
-  assert.ok(container.components.some(component => component.type === 10 && component.content.includes('<#1900000000000000006>')));
+  assert.ok(container.components.some(component => component.type === 10 && component.content.includes('<#1566418277423513670>')));
 });
 
 test('verification panel without a server icon remains valid', () => {

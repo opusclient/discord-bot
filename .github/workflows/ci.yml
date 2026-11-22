@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   test:
-    name: Node.js tests
+    name: Strict TypeScript and parity
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,4 +24,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run test suite
-        run: npm test
+        run: npm run verify

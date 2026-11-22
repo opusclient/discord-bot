@@ -9,3 +9,5 @@ Before every production operation, read `~/.config/opusclient/discord-bot-produc
 Independently run `hostname -s` on the actual destination and require the exact result `nbi-edge-01`. Abort if the connection or identity check fails. Never fall back to any other machine. Check the production directory and service before changing anything.
 
 `npm run deploy` registers guild slash commands with Discord; it is not an infrastructure deployment. Use it only after confirming application identity and the intended production server.
+
+TypeScript source policy: maintain only root `src/*.ts` and `web/dictate/*.ts`. `legacy/` is read-only rollback reference, and `dist/` is generated. Run `npm run verify` before commits. Never spawn a duplicate Discord bot or mutate slash commands during source normalization.

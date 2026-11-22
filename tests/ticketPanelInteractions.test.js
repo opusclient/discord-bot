@@ -59,6 +59,7 @@ test('ticket category selection keeps the purpose modal intact', async () => {
     inGuild: () => true,
     isButton: () => false,
     isStringSelectMenu: () => true,
+    isModalSubmit: () => false,
     showModal: async modal => modals.push(modal.toJSON())
   };
   await execute(interaction, {});

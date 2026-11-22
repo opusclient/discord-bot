@@ -1,7 +1,7 @@
 // One-off helper: prints every role and channel ID of the configured guild,
 // so they can be copied into config.json. Run: npm run ids
 import { Client, GatewayIntentBits } from 'discord.js';
-import { assertConfig, config } from '../src/config.js';
+import { assertConfig, config } from '../dist/config.js';
 
 assertConfig({ requireGuild: true });
 

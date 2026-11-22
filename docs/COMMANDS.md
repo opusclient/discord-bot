@@ -1,6 +1,6 @@
 # Commands and features
 
-Opus System registers **26 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
+Opus System registers **27 guild-scoped slash commands**. The table below groups the top-level commands by purpose. A command with subcommands appears only once in the registered top-level count.
 
 ## General and community
 
@@ -60,6 +60,7 @@ Cases, audit messages and expirations have their own destinations. Discord AutoM
 | `/promote` | Promote within a logical Staff or Development branch |
 | `/demote` | Demote within a branch or clear its roles |
 | `/addselfrole`, `/removeselfrole` | Configure the public opt-in role panel |
+| `/customrole create`, `/customrole delete`, `/customrole list` | Manage non-hoisted, non-mentionable custom color roles |
 
 The Staff and Development branch rules, delegated **Staff Management** / **Development Management** roles, automatic Principal Engineer permissions, Manager+ self-role exception, Discord Developer special case and Development Access restrictions are in [PERMISSIONS.md](PERMISSIONS.md).
 
@@ -82,4 +83,4 @@ These are operational controls, not normal member features. Their behavior respe
 - The `/help` interface is a discovery aid, **not** an authorization boundary.
 - Punishment case details and reason visibility may be further restricted to staff or private output.
 
-The module command implementations under src/modules are authoritative; src/commands remains a compatibility entry point. See [Modules](MODULES.md).
+Typed command implementations live in `src/commands/`. The executable registry loads compiled definitions from `dist/commands/`. See [Modules](MODULES.md).

@@ -57,7 +57,7 @@ test('Principal Engineer automatically manages Development without the delegatio
   assert.equal(canManageBranch(mock([], true), 'development'), true);
   assert.equal(canManageBranch(mock([policy.principal]), 'development'), true);
   assert.equal(canManageBranch(mock([devManagement.id]), 'development'), true);
-  assert.equal(canManageBranch(mock([policy.specialties[2]]), 'development'), true);
+  assert.equal(canManageBranch(mock([policy.specialties[2]]), 'development'), false);
   assert.equal(canManageBranch(mock([policy.manager]), 'development'), false);
   assert.equal(canManageBranch(mock([staffManagement.id]), 'development'), false);
   assert.equal(canManageBranch(mock([policy.developer]), 'development'), false);
@@ -73,9 +73,15 @@ test('Management roles cannot be delegated through unrelated branches', () => {
   assert.match(teamManagementPermissionError(mock([devManagement.id]), null, staffRole), /Staff branch/);
   assert.equal(teamManagementPermissionError(mock([staffManagement.id]), null, staffRole), null);
   assert.equal(teamManagementPermissionError(mock([policy.principal]), null, developerRole), null);
-  assert.match(teamManagementPermissionError(mock([policy.staff[2]]), null, devManagement), /Only Founder or Manager/);
-  assert.equal(teamManagementPermissionError(mock([policy.manager]), null, devManagement), null);
+  assert.match(teamManagementPermissionError(mock([policy.staff[2]]), null, devManagement), /Only Founder/);
+  assert.match(teamManagementPermissionError(mock([policy.manager]), null, devManagement), /Only Founder/);
+  assert.match(teamManagementPermissionError(mock([policy.manager]), devManagement, null), /Only Founder/);
+  assert.match(teamManagementPermissionError(mock([policy.manager, devManagement.id]), devManagement, null), /Only Founder/);
+  assert.equal(teamManagementPermissionError(mock([policy.manager]), null, staffManagement), null);
+  assert.equal(teamManagementPermissionError(mock([policy.manager]), staffManagement, null), null);
   assert.equal(teamManagementPermissionError(mock([], true), null, staffManagement), null);
+  assert.equal(teamManagementPermissionError(mock([], true), null, devManagement), null);
+  assert.equal(teamManagementPermissionError(mock([], true), devManagement, null), null);
 });
 
 test('Staff Management requires Adminstrator or Development rank; Development Management requires Manager', () => {
@@ -127,4 +133,30 @@ test('Delegation expires when the qualifying team role is removed', () => {
 test('Management delegation is never a public self-role', () => {
   assert.match(addSelfRoleEntry(staffManagement).error, /cannot be self-assigned/);
   assert.match(addSelfRoleEntry(devManagement).error, /cannot be self-assigned/);
+});
+
+test('Discord Developer cannot manage Development through native Administrator or its specialty', () => {
+  const discordDeveloper = policy.specialties[2];
+  const actor = mock([policy.developer, discordDeveloper]);
+  actor.member.permissions = { has: () => true };
+  assert.equal(canManageBranch(actor, 'development'), false);
+  assert.match(teamManagementPermissionError(actor, null, developerRole), /Development branch management/);
+  assert.equal(canManageBranch(mock([policy.principal]), 'development'), true);
+  assert.equal(canManageBranch(mock([devManagement.id]), 'development'), true);
+  assert.equal(canManageBranch(mock([], true), 'development'), true);
+});
+
+test('Management delegation is restricted by role type even with native Administrator', () => {
+  const manager = mock([policy.manager]);
+  manager.member.permissions = { has: () => true };
+  const staffDelegate = mock([staffManagement.id]);
+  staffDelegate.member.permissions = { has: () => true };
+  for (const actor of [manager, staffDelegate, mock([policy.principal]), mock([policy.specialties[2]])]) {
+    assert.match(teamManagementPermissionError(actor, null, devManagement), /Only Founder/);
+    assert.match(teamManagementPermissionError(actor, devManagement, null), /Only Founder/);
+  }
+  assert.equal(teamManagementPermissionError(manager, null, staffManagement), null);
+  assert.equal(teamManagementPermissionError(manager, staffManagement, null), null);
+  assert.match(teamManagementPermissionError(staffDelegate, null, staffManagement), /Only Founder or Manager/);
+  assert.equal(teamManagementPermissionError(mock([], true), null, devManagement), null);
 });

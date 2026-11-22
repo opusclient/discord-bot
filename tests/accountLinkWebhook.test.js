@@ -22,9 +22,12 @@ test('signed account-link events are validated, idempotent and ordered', async (
     [config.unlinkedRoleId, {id: config.unlinkedRoleId, name: 'Unlinked', managed: false}],
     [config.linkedRoleId, {id: config.linkedRoleId, name: 'Linked', managed: false}]
   ]);
+  const assigned = new Map([...held].map(id => [id, roles.get(id)]));
   const guild = {
-    roles: { fetch: async id => roles.get(id) ?? null },
-    members: { fetch: async id => {
+    id: config.guildId,
+    roles: { cache: roles, fetch: async id => roles.get(id) ?? null },
+    members: { fetch: async arg => {
+      const id = typeof arg === 'object' ? arg.user : arg;
       if (id !== '1474773518963970158') throw new Error('Wrong user');
       return member;
     }}
@@ -34,9 +37,9 @@ test('signed account-link events are validated, idempotent and ordered', async (
     user: { bot: false },
     guild,
     roles: {
-      cache: { has: id => held.has(id) },
-      add: async role => { held.add(role.id); },
-      remove: async role => { held.delete(role.id); }
+      cache: assigned,
+      add: async role => { held.add(role.id); assigned.set(role.id, role); },
+      remove: async role => { held.delete(role.id); assigned.delete(role.id); }
     }
   };
   const client = { guilds: { fetch: async id => {

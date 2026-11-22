@@ -4,7 +4,7 @@ import { MessageFlags } from 'discord.js';
 import { buildRoleNotification, buildRoleOperationResult, ROLE_RESULTS_PER_PAGE, ticketPanelUrl } from '../src/services/roleEmbeds.js';
 
 const guild = {
-  id: '1900000000000000002',
+  id: '1566400594267213887',
   name: 'Opus Client',
   iconURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png'
 };
@@ -95,9 +95,9 @@ test('role add and remove use compact Components V2 notifications', () => {
 });
 
 test('ticket link uses only a real configured channel and guild', () => {
-  assert.equal(ticketPanelUrl(guild.id, '1900000000000000007'), 'https://discord.com/channels/1900000000000000002/1900000000000000007');
+  assert.equal(ticketPanelUrl(guild.id, '1566420401578315846'), 'https://discord.com/channels/1566400594267213887/1566420401578315846');
   assert.equal(ticketPanelUrl(guild.id, 'invalid'), null);
-  assert.equal(ticketPanelUrl('invalid', '1900000000000000007'), null);
+  assert.equal(ticketPanelUrl('invalid', '1566420401578315846'), null);
 });
 
 test('requester response highlights summary, transitions and useful corrections', () => {

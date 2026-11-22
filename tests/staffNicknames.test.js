@@ -21,7 +21,7 @@ function sample(prefixes, { nickname = null, globalName = 'display name', manage
   const member = {
     id,
     user: { bot: false, globalName, username: 'username' },
-    guild: { id: config.guildId, ownerId: owner ? id : '1900000000000000001' },
+    guild: { id: config.guildId, ownerId: owner ? id : '1320303839701897230' },
     roles: { cache: { has: x => assigned.has(x) } },
     nickname,
     manageable,

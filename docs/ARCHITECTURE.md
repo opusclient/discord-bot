@@ -1,136 +1,35 @@
 # Architecture
 
-Opus System is a **single Discord bot process** written with `discord.js` and JavaScript ES modules. It persists operational state in SQLite and consumes Discord Gateway events.
+Opus System is a modular Discord bot implemented in strict TypeScript and compiled to Node.js ESM. It uses `discord.js`, SQLite and one Gateway process. Opus Manager independently controls the static Discord guild layout.
 
-## Boundaries
+## Canonical source layout
 
-~~~text
-Discord Guild / Gateway
-        |
-        v
-  src/index.js
-        |
-        +-- src/events/                  Gateway adapters
-        +-- src/modules/registry.js      Feature and command ownership
-        |       +-- oai                   Authority integrity
-        |       +-- management            Staff/Dev branches
-        |       +-- moderation            Cases and enforcement
-        |       +-- verification          Member onboarding
-        |       +-- tickets               Support
-        |       +-- community             Member services
-        |       +-- communications        Dictate/editor
-        |       +-- observability         Audit and logs
-        |       +-- integrations          External bridges
-        |       +-- operations            Setup and runtime
-        +-- src/services/                Domain implementations
-        +-- src/db.js                    SQLite
-        +-- src/deploy-commands.js       Command registration
-~~~
+| Directory | Role |
+| --- | --- |
+| `src/commands/*.ts` | Slash-command adapters |
+| `src/events/*.ts` | Gateway event handlers |
+| `src/services/*.ts` | Moderation, OAI, tickets, verification, logs and integrations |
+| `src/ticket-actions/*.ts` | Ticket workflows |
+| `src/utils/*.ts` | Typed helper functions and loaders |
+| `src/index.ts` | Authorized runtime entrypoint |
+| `src/deploy-commands.ts` | Authorized guild command registration |
+| `src/config.ts` and `src/db.ts` | Configuration and persistence |
+| `web/dictate/*.ts` | Browser editor source |
+| `legacy/src/` and `legacy/web/` | Archived JavaScript for parity and rollback |
+| `dist/` and `dist-web/` | Generated untracked output |
 
-The bot is deliberately **not the owner of the entire server layout**. When `serverManagedByOpusManager` is enabled, the separate **Opus Manager** application controls static roles, category order, default channel permissions and fixed channels. Opus System handles dynamic roles and interactions, temporary support and voice channels, status messages and moderation.
+Only `src/` and `web/dictate/*.ts` are maintained source. The build compiles the backend to `dist/` and browser code to `dist-web/`, then copies compiled editor scripts into the served web directory. Do not edit generated JavaScript.
 
 ## Startup
 
-1. Load `.env` and `config.json` through `src/config.js`.
-2. Initialize the SQLite database in `src/db.js` and feature-specific tables.
-3. Construct the Discord client with the required Gateway intents.
-4. Load commands through the module ownership registry and event handlers from the existing Gateway adapters.
-5. On `ClientReady`, initialize periodic work, check the guild slash command registry, reconcile team roles, prepare invite tracking and refresh applicable panels.
+The production service invokes `dist/index.js`, which requires `OPUS_TS_CUTOVER=1`. It loads compiled commands and event handlers, opens the configured SQLite database, then starts authorized services. OAI monitors entrusted role state and preserves Founder/Manager decisions. Historical OAI incidents are not reconstructed during a source migration.
 
-The event implementations are intentionally separate so a failed moderation notification should not silently invalidate the actual punishment or role operation.
+Offline verification does not run a Discord client. `npm run verify` compiles both targets, checks strict TypeScript, validates 27 command/21 event registrations, confirms activation guards, and runs regression tests against JavaScript legacy and TypeScript outputs with isolated synthetic state.
 
-See [Module architecture](MODULES.md) for domain boundaries and migration status.
+## Service boundaries
 
-## Data and responsibilities
+Commands are adapters; business authorization belongs in services. OAI checks policy and history independently of native Discord permissions. Management controls Staff/Development eligibility and approvals. The separate Opus Manager owns static guild roles and channels when `serverManagedByOpusManager` is enabled. Ticket and moderation workflows must not bypass authority protections.
 
-| Component | Main responsibility |
-| --- | --- |
-| `src/config.js` | Local configuration loading, default values and controlled updates |
-| `src/db.js` | SQLite schema and statements; cases, tickets, joins, states and records |
-| `src/services/roleBranchPolicy.js` | Pure Staff/Development hierarchy and consistency rules |
-| `src/services/teamManagement.js` | Independent Staff/Development delegation and implicit Principal Engineer permissions |
-| `src/services/roleBranchService.js` | Serialized per-member role updates and reconciliation |
-| `src/services/roleOperations.js` | Bulk role commands, authorization, notifications and history |
-| `src/services/teamRoleHistory.js` | Structured promote/demote records |
-| `src/services/tickets.js` | Ticket panels, lifecycle, overwrites and transcripts |
-| `src/services/auditlog.js` | Member message edits/deletes routed to moderation, separate from guild configuration audit |
-| `src/services/guildAuditEvents.js` | Audit event classification, formatting and routing |
-| `src/services/inviteTracker.js` | Guild invite snapshots and join attribution |
-| `src/services/inviteHistory.js` | Invite join/leave records and member statistics |
-| `src/services/accountLinkWebhook.js` | Optional signed account-status callback |
-| `src/services/overlayBridge.js` | Optional, separate integration bridge |
-| `src/utils/permissions.js` | Discord and role-aware command authorization |
-| `src/utils/visibility.js` | Public-by-default slash command responses |
+`npm run deploy` changes the Discord guild slash-command registry when explicitly authorized and is not infrastructure deployment. A live bot restart is never part of routine source verification.
 
-## Role update pipeline
-
-```text
-/role, /promote, /demote
-        │
-        ▼
-Permission and role hierarchy checks
-        │
-        ▼
-RoleBranchPolicy.planRoleChange(...)
-        │
-        ▼
-Per-member lock in RoleBranchService
-        │
-        ▼
-Single member.roles.set(...) operation
-        │
-        ├── Verify updated member state
-        ├── Save promote/demote history
-        ├── Notify affected member via DM
-        └── Emit moderation log
-```
-
-The policy runs **again** on manual role updates received through `GuildMemberUpdate` and during startup reconciliation. This keeps the team branches consistent even if a role is changed directly in Discord. The guild owner is exempt from automatic rank rewriting.
-
-The policy operates using **configured role IDs**, not arbitrary role color, name or the role list's visual order. Discord role hierarchy is still checked independently before a bot-driven mutation.
-
-## Ticket lifecycle
-
-```text
-Two-embed support panel
-    ├── Category select → Purpose modal → Ticket created
-    ├── My Tickets / Status / Guide buttons
-    └── /ticket add, remove, rename, close
-          /claim, /unclaim
-             │
-             ├── SQLite ticket record
-             ├── Channel overwrites and staff visibility
-             └── HTML transcript on close
-```
-
-Ticket channels are placed into configured ticket categories; the global ticket counter is stored in SQLite. Closing a ticket requires successful transcript generation/upload before channel deletion.
-
-For the full access model and critical direct-user-deny behavior, see [TICKETS.md](TICKETS.md).
-
-## Auditing and log routing
-
-The bot uses **four active log destinations**, each with a single responsibility:
-
-| Destination | Events |
-| --- | --- |
-| `audit-logs` | Guild/server changes: roles, channels, permission overwrites, integrations, invites, webhooks and configuration |
-| `moderation-logs` | Staff-issued cases, manual moderation, blacklists, purges, member message edits/deletions and bulk deletions |
-| `automod-logs` | Discord AutoMod Gateway actions, bot-initiated enforcement, automated mutes and scheduled expirations |
-| `ticket-logs` | Ticket openings, claims/unclaims, renames, access changes, permanent ticket staff permissions, closures and HTML transcripts |
-
-The bot does **not** send member message content to `audit-logs`. Ticket channel audit actions are filtered to reduce duplicate records. One close transcript is sent to `ticket-logs`; a second `Ticket Closed` card is not posted to moderation.
-
-The legacy `blacklist-records` channel is no longer a write destination. Existing guild installations may archive it instead of deleting its history; `logChannels.blacklistChannelId` is retained as a legacy exclusion so changes inside a historical log channel are not mirrored as user message activity.
-
-The exact channel IDs are configured per installation. Discord Gateway data can omit deleted message content, so the bot records missing content or uncertain attribution explicitly instead of inventing it. For Owner-only deletion exceptions, local evidence snapshots and restored-message metadata, see [Log integrity and recovery](LOG_INTEGRITY.md).
-
-## Invite attribution
-
-At startup, the bot snapshots invite usage counters. On new member joins, it compares the next snapshot with the previous one and attributes a join only if **exactly one known invite increases by one**, and its inviter is known. Unknown and ambiguous joins are recorded without an inviter. User leave events update the remaining-member count; rejoining does not inflate unique referral counts. The bot does not reconstruct historical join attribution from old invite usage totals.
-
-## Design constraints
-
-- Discord REST requests may fail or be rate-limited. Events must tolerate missing cache state and partial information.
-- Discord's native Administrator permission overrides channel-level overwrites; ticket removals cannot fully exclude guild owners or Administrators.
-- Secrets are not source files. Runtime databases, member data and logs must stay outside the repository.
-- Production guild-specific migration scripts are **not** shipped publicly; configure static guild roles/channels separately.
+See [Modules](MODULES.md) and [Operations](OPERATIONS.md).

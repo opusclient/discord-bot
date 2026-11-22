@@ -9,8 +9,8 @@ import {
   getDeletedMessageMedia
 } from '../src/services/deletedMediaCache.js';
 
-const messageId = '1900000000000000002';
-const attachmentId = '1900000000000000049';
+const messageId = '1566400594267213887';
+const attachmentId = '1573020243771531286';
 
 function imageMessage(size = 4) {
   return {
@@ -43,7 +43,7 @@ test('deleted image is cached, restored as an upload, and removed after logging'
     await capture;
     assert.equal(requests, 1);
     assert.equal(stored.length, 1);
-    assert.match(stored[0].name, /^1900000000000000049-/);
+    assert.match(stored[0].name, /^1573020243771531286-/);
     assert.deepEqual(stored[0].attachment, payload);
     await clearDeletedMessageMedia(messageId, { dir });
     assert.deepEqual(await getDeletedMessageMedia(messageId, { dir }), []);

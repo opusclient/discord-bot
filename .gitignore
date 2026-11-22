@@ -85,3 +85,11 @@ desktop.ini
 .idea/
 .vscode/
 *.code-workspace
+
+/dist/
+/dist-web/
+/web/dictate/bootstrap.js
+/web/dictate/editor.js
+/.typescript-tests/
+*.tsbuildinfo
+._*

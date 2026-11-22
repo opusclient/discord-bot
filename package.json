@@ -4,18 +4,31 @@
   "private": true,
   "description": "Official Opus Client Discord community management and moderation bot",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "engines": {
     "node": ">=23.4.0"
   },
   "scripts": {
-    "start": "node --env-file=.env src/index.js",
-    "dev": "node --watch --env-file=.env src/index.js",
-    "deploy": "node --env-file=.env src/deploy-commands.js",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.web.json && node scripts/sync-web-assets.mjs",
+    "start": "node --env-file=.env dist/index.js",
+    "dev": "node --watch --env-file=.env dist/index.js",
+    "deploy": "node --env-file=.env dist/deploy-commands.js",
     "ids": "node --env-file=.env scripts/list-ids.js",
-    "test": "node scripts/test.mjs"
+    "typecheck": "tsc -p tsconfig.strict.json --noEmit && tsc -p tsconfig.web.strict.json --noEmit",
+    "test": "npm run build && node scripts/test-typescript-dist.mjs",
+    "test:legacy": "node scripts/test-typescript-dist.mjs --baseline",
+    "test:parity": "node scripts/check-typescript-test-parity.mjs",
+    "parity": "node scripts/check-typescript-parity.mjs",
+    "parity:dist": "node scripts/check-typescript-parity.mjs --dist",
+    "runtime-parity": "node scripts/check-typescript-runtime-parity.mjs",
+    "guard:cutover": "node scripts/check-typescript-guards.mjs",
+    "verify": "npm run parity && npm run build && npm run typecheck && npm run parity:dist && npm run runtime-parity && npm run guard:cutover && npm run test:parity"
   },
   "dependencies": {
     "discord.js": "^14.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3"
   }
 }

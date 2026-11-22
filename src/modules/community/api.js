@@ -1,9 +1,0 @@
-export * as inviteHistory from '../../services/inviteHistory.js';
-export * as inviteTracker from '../../services/inviteTracker.js';
-export * as memberProfile from '../../services/memberProfile.js';
-export * as selfroles from '../../services/selfroles.js';
-export * as welcome from '../../services/welcome.js';
-export * as boosts from '../../services/boosts.js';
-export * as boostFormat from '../../services/boostFormat.js';
-export * as createvoice from '../../services/createvoice.js';
-export * as serverstats from '../../services/serverstats.js';

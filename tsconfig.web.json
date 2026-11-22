@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "None",
+    "rootDir": "./web/dictate",
+    "outDir": "./dist-web/dictate",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [],
+    "noCheck": false,
+    "strict": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "noEmitOnError": true,
+    "allowJs": false
+  },
+  "include": [
+    "web/dictate/*.ts"
+  ]
+}

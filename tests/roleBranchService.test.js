@@ -31,7 +31,7 @@ const positions = new Map([
 ]);
 
 function setup(memberIds, { owner = false, failSet = false } = {}) {
-  const memberId = owner ? '1900000000000000001' : '123456789012345678';
+  const memberId = owner ? '1320303839701897230' : '123456789012345678';
   const roleCache = new Map([...nameMap].map(([id, name]) => [id, {
     id, name, position: positions.get(id), managed: false
   }]));
@@ -39,7 +39,7 @@ function setup(memberIds, { owner = false, failSet = false } = {}) {
   const calls = [];
   const guild = {
     id: config.guildId,
-    ownerId: '1900000000000000001',
+    ownerId: '1320303839701897230',
     roles: {
       cache: roleCache,
       fetch: async () => roleCache

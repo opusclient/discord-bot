@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { isMuteInternalChannel, applyMuteOverwrite } from '../src/services/mutes.js';
+import { config } from '../src/config.js';
 
 const role = { id: 'muted' };
 const policy = { muteInternalCategoryIds: ['internal'] };
@@ -17,7 +18,7 @@ test('internal channels remove only the Muted overwrite', async () => {
   let edited = 0;
   const channel = {
     id: 'private-chat',
-    parentId: '1900000000000000013',
+    parentId: config.muteInternalCategoryIds[0],
     permissionOverwrites: {
       cache: previous,
       delete: async target => { removed = target.id; previous.delete(target.id); },
@@ -34,7 +35,7 @@ test('regular channels continue receiving Muted restrictions', async () => {
   let options = null;
   const channel = {
     id: 'public',
-    parentId: '1900000000000000008',
+    parentId: '1566420576942170122',
     isVoiceBased: () => false,
     permissionOverwrites: {
       cache: new Map(),

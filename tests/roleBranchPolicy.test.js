@@ -15,8 +15,8 @@ const [pe, developer] = p.development;
 const [backend, frontend, discord] = p.specialties;
 const verified = config.verifiedRoleId;
 const linked = config.linkedRoleId;
-const tester = '1900000000000000021';
-const artist = '1900000000000000039';
+const tester = '1567868641255624734';
+const artist = '1568123522637766657';
 const normal = roles => [...normalizeMemberRoles(roles).roles];
 const update = (roles, mode, fromId, toId) =>
   planRoleChange(roles, { mode, fromId, toId });

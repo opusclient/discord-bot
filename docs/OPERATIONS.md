@@ -4,13 +4,13 @@
 
 ```bash
 npm ci
-npm test
+npm run verify
 npm run deploy -- --check
-npm run deploy
-npm start
+OPUS_TS_ALLOW_COMMAND_DEPLOY=1 npm run deploy
+OPUS_TS_CUTOVER=1 npm start
 ```
 
-Run `npm test` before changing live configuration. The tests use only synthetic Discord IDs and an isolated configuration fixture. Register commands only after verifying `.env`, `CLIENT_ID` and the target `guildId`.
+Run `npm run verify` before changing live configuration. The tests use only synthetic Discord IDs and an isolated configuration fixture. Register commands only after verifying `.env`, `CLIENT_ID` and the target `guildId`.
 
 In production, run the bot under a supervisor such as systemd, a service manager or a dedicated container orchestration unit. Never commit host-specific service units containing credentials or private SSH paths to this repository.
 
@@ -24,7 +24,9 @@ In production, run the bot under a supervisor such as systemd, a service manager
 | Bot token and webhook secret | `.env` / secret manager | **No** |
 | Ticket, case and invite tracking DB | `data/*.sqlite` and WAL files | **No** |
 | Ticket transcripts, logs and backups | Runtime disk | **No** |
-| Code and unit tests | `src/`, `tests/` | Yes |
+| Maintained TypeScript and tests | `src/`, `web/dictate/*.ts`, `tests/` | Yes |
+| Legacy rollback reference | `legacy/` | Yes |
+| Compiled output | `dist/`, `dist-web/` | No |
 
 ## Backups
 
@@ -37,7 +39,7 @@ In production, run the bot under a supervisor such as systemd, a service manager
 ## Deployments
 
 - `npm run deploy -- --check` only audits the command registry.
-- `npm run deploy` updates **guild-scoped** slash commands and verifies the new registry; this is a real Discord mutation.
+- `OPUS_TS_ALLOW_COMMAND_DEPLOY=1 npm run deploy` updates **guild-scoped** slash commands and verifies the new registry; this is a real Discord mutation.
 - On startup, the bot checks and synchronizes only if the registry differs.
 - Features and listeners require the appropriate Discord Gateway intents.
 - The bot requires sufficient role hierarchy and API privileges for role operations.
