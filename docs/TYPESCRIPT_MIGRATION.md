@@ -1,19 +1,18 @@
-# TypeScript source policy
+# TypeScript-only source policy
 
-As of 2026-11-22, TypeScript is the **sole maintained source language** for Opus System.
+As of 2026-11-22, the source tree is TypeScript-only.
 
-- `src/`: 117 canonical TypeScript backend files, including commands, services, events and utilities.
-- `web/dictate/`: two TypeScript browser source files and the HTML/CSS assets.
-- `legacy/src/` and `legacy/web/`: preserved historical JavaScript for parity and rollback. These folders are never imported by production.
-- `dist/` and `dist-web/`: ignored build output.
-- `tests/fixtures/config.test.json`: synthetic test configuration. Real configuration, credentials, databases and backups are never committed.
+- `src/`: canonical backend TypeScript files.
+- `web/dictate/*.ts`: canonical web editor source.
+- `dist/`, `dist-web/`: generated JavaScript for the Node.js and browser runtime, excluded from Git.
+- `tests/fixtures/config.test.json`: synthetic test config; live `.env`, `config.json`, databases and backups must never be committed.
 
-Use `npm ci && npm run verify`. Strict typechecks, 27-command/21-event parity, intentional-start guards and all regression tests must pass. At migration, 280 tests passed against both JavaScript and TypeScript on a clean Git checkout.
+All obsolete JavaScript source, including the former `legacy/` folder, was deleted. The previous source revision can be recovered from Git history. It is not loaded or tested by the current release pipeline.
+
+Run `npm ci && npm run verify`. Verification enforces strict TypeScript compilation, checks generated JavaScript against the source inventory (including the 27 commands and 21 Gateway events), validates intentional-start guards, and runs the synthetic regression tests. No live Discord connection or command registration is performed.
 
 ## Production
 
-Production cutover to `dist/index.js` on NBI Edge 01 was completed on 2026-11-22. The user service supplies `OPUS_TS_CUTOVER=1`. A protected pre-cutover database snapshot, legacy source archive and sidecar data are retained outside Git. Rollback may restore the JavaScript runtime without overwriting newer database records.
+NBI Edge 01 runs the compiled `dist/index.js` under `opus-system-bot.service`. JavaScript in `dist/` and `web/dictate/` is generated and is required for runtime. Do not delete compiled JavaScript from a running deployment.
 
-Source reorganization is not permission to launch a second bot, register slash commands, reset OAI baselines, reconstruct historical incidents or issue ghost pings. Deliberate command registration requires `OPUS_TS_ALLOW_COMMAND_DEPLOY=1`; `npm run deploy -- --check` is read-only.
-
-Maintain root `src/` as TypeScript. Do not reintroduce a nested `typescript/src/` or JavaScript modules under root `src/`.
+The pre-TypeScript cutover backup and SQLite snapshots are preserved separately outside the application code tree, so a recovery can be reviewed without including old source in the active repo. No database reset, historical OAI replay, bot relogin or Discord notifications are authorized by source cleanup. Slash command changes still require `OPUS_TS_ALLOW_COMMAND_DEPLOY=1`.

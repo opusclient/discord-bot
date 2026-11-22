@@ -10,4 +10,4 @@ Independently run `hostname -s` on the actual destination and require the exact 
 
 `npm run deploy` registers guild slash commands with Discord; it is not an infrastructure deployment. Use it only after confirming application identity and the intended production server.
 
-TypeScript source policy: maintain only root `src/*.ts` and `web/dictate/*.ts`. `legacy/` is read-only rollback reference, and `dist/` is generated. Run `npm run verify` before commits. Never spawn a duplicate Discord bot or mutate slash commands during source normalization.
+TypeScript source policy: maintain only root `src/*.ts` and `web/dictate/*.ts`. the previous JavaScript source has been deleted, and `dist/` is generated. Run `npm run verify` before commits. Never spawn a duplicate Discord bot or mutate slash commands during source normalization.

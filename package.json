@@ -16,13 +16,10 @@
     "ids": "node --env-file=.env scripts/list-ids.js",
     "typecheck": "tsc -p tsconfig.strict.json --noEmit && tsc -p tsconfig.web.strict.json --noEmit",
     "test": "npm run build && node scripts/test-typescript-dist.mjs",
-    "test:legacy": "node scripts/test-typescript-dist.mjs --baseline",
-    "test:parity": "node scripts/check-typescript-test-parity.mjs",
-    "parity": "node scripts/check-typescript-parity.mjs",
-    "parity:dist": "node scripts/check-typescript-parity.mjs --dist",
-    "runtime-parity": "node scripts/check-typescript-runtime-parity.mjs",
     "guard:cutover": "node scripts/check-typescript-guards.mjs",
-    "verify": "npm run parity && npm run build && npm run typecheck && npm run parity:dist && npm run runtime-parity && npm run guard:cutover && npm run test:parity"
+    "verify": "npm run build && npm run typecheck && npm run check:build && npm run guard:cutover && npm run test:compiled",
+    "check:build": "node scripts/check-typescript-build.mjs",
+    "test:compiled": "node scripts/test-typescript-dist.mjs"
   },
   "dependencies": {
     "discord.js": "^14.27.0"

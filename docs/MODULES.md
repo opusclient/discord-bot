@@ -1,6 +1,6 @@
 # Feature ownership
 
-Opus System is a single-process modular monolith. These areas identify business ownership, not individually deployed bots or a separate legacy command registry.
+Opus System is a single-process modular monolith. These areas identify business ownership, not individually deployed bots or an additional command registry.
 
 | Domain | Core TypeScript services | Commands |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ All **27 slash commands** are loaded from the compiled `dist/commands/` director
 2. OAI and Management remain distinct. Founder review can override Manager decisions.
 3. Evidence logs are retained independently of ordinary moderation permissions.
 4. Shared config and database modules are not authorization shortcuts.
-5. `legacy/` is a read-only rollback reference. Never import it from maintained source.
-6. Compile strict TypeScript, validate command/event parity and pass the synthetic regression suite before any commit or production change.
+5. No JavaScript source trees are maintained; use Git history for historical source and `dist/` exclusively for compiled code.
+6. Compile strict TypeScript, validate the command/event output inventory and pass the synthetic regression suite before any commit or production change.
 
 See [Architecture](ARCHITECTURE.md) and [TypeScript migration](TYPESCRIPT_MIGRATION.md).

@@ -15,7 +15,7 @@ Opus System is a modular Discord bot implemented in strict TypeScript and compil
 | `src/deploy-commands.ts` | Authorized guild command registration |
 | `src/config.ts` and `src/db.ts` | Configuration and persistence |
 | `web/dictate/*.ts` | Browser editor source |
-| `legacy/src/` and `legacy/web/` | Archived JavaScript for parity and rollback |
+
 | `dist/` and `dist-web/` | Generated untracked output |
 
 Only `src/` and `web/dictate/*.ts` are maintained source. The build compiles the backend to `dist/` and browser code to `dist-web/`, then copies compiled editor scripts into the served web directory. Do not edit generated JavaScript.
@@ -24,7 +24,7 @@ Only `src/` and `web/dictate/*.ts` are maintained source. The build compiles the
 
 The production service invokes `dist/index.js`, which requires `OPUS_TS_CUTOVER=1`. It loads compiled commands and event handlers, opens the configured SQLite database, then starts authorized services. OAI monitors entrusted role state and preserves Founder/Manager decisions. Historical OAI incidents are not reconstructed during a source migration.
 
-Offline verification does not run a Discord client. `npm run verify` compiles both targets, checks strict TypeScript, validates 27 command/21 event registrations, confirms activation guards, and runs regression tests against JavaScript legacy and TypeScript outputs with isolated synthetic state.
+Offline verification does not run a Discord client. `npm run verify` compiles both targets, checks strict TypeScript, validates the complete 27-command/21-event output inventory, confirms activation guards, and runs regression tests on compiled TypeScript with isolated synthetic state.
 
 ## Service boundaries
 

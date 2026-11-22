@@ -25,7 +25,7 @@ In production, run the bot under a supervisor such as systemd, a service manager
 | Ticket, case and invite tracking DB | `data/*.sqlite` and WAL files | **No** |
 | Ticket transcripts, logs and backups | Runtime disk | **No** |
 | Maintained TypeScript and tests | `src/`, `web/dictate/*.ts`, `tests/` | Yes |
-| Legacy rollback reference | `legacy/` | Yes |
+| Historical JavaScript source | Git history only | No |
 | Compiled output | `dist/`, `dist-web/` | No |
 
 ## Backups

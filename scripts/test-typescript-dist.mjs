@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const temp = await mkdtemp(path.join(tmpdir(), 'opus-system-ts-tests-'));
 const testFolder = path.join(temp, 'tests');
-const baseline = process.argv.includes('--baseline');
 const tests = (await readdir(path.join(root, 'tests')))
   .filter(name => name.endsWith('.test.js'))
   .sort();
@@ -15,19 +14,11 @@ const tests = (await readdir(path.join(root, 'tests')))
 try {
   await mkdir(testFolder, { recursive: true });
   await mkdir(path.join(temp, 'data'), { recursive: true });
-  const runtime = baseline ? path.join('legacy','src') : 'dist';
-  await cp(path.join(root, runtime), path.join(temp, 'src'), { recursive: true });
-  if (!baseline) await cp(path.join(root, 'dist'), path.join(temp, 'dist'), { recursive: true });
+  await cp(path.join(root, 'dist'), path.join(temp, 'src'), { recursive: true });
+  await cp(path.join(root, 'dist'), path.join(temp, 'dist'), { recursive: true });
   await cp(path.join(root, 'web'), path.join(temp, 'web'), { recursive: true });
-  if (baseline) {
-    for (const file of ['bootstrap.js', 'editor.js']) {
-      await copyFile(path.join(root, 'legacy', 'web', 'dictate', file), path.join(temp, 'web', 'dictate', file));
-    }
-  }
-  if (!baseline) {
-    for (const file of ['bootstrap.js', 'editor.js']) {
-      await copyFile(path.join(root, 'dist-web', 'dictate', file), path.join(temp, 'web', 'dictate', file));
-    }
+  for (const file of ['bootstrap.js', 'editor.js']) {
+    await copyFile(path.join(root, 'dist-web', 'dictate', file), path.join(temp, 'web', 'dictate', file));
   }
   await cp(path.join(root, 'scripts'), path.join(temp, 'scripts'), { recursive: true });
   await copyFile(path.join(root, 'package.json'), path.join(temp, 'package.json'));

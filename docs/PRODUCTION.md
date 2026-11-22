@@ -16,4 +16,4 @@
 
 ## TypeScript runtime
 
-The authorized production user service `opus-system-bot.service` launches `dist/index.js`. `src/*.ts` is the only maintained backend source, while `legacy/src/` is an archived JavaScript reference for rollback. Validate the target host policy and an SQLite backup before deploying a new build. Never start a parallel Gateway process, reset OAI baselines or replay historical events during source normalization.
+The authorized production user service `opus-system-bot.service` launches `dist/index.js`. `src/*.ts` is the only maintained backend source. Old JavaScript source files are removed from the application tree; historical rollback archives remain in protected data storage. Validate the target host policy and an SQLite backup before deploying a new build. Never start a parallel Gateway process, reset OAI baselines or replay historical events during source normalization.
